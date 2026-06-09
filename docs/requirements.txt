@@ -1,0 +1,7 @@
+sphinx
+sphinx_autodoc_typehints
+
+# pip install --extra-index-url "https://pypi.jitx.com/jitx/main/+simple" -r requirements.txt
+jitx
+jitxlib-standard
+jitxlib-parts

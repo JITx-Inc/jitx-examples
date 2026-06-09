@@ -1,0 +1,733 @@
+{
+  "resolved_price": 0.172,
+  "material-core": "ferrite",
+  "cofactr-fetch": false,
+  "dc-resistance": 5.405,
+  "price": 0.34942029,
+  "dimensions": {
+    "x": 0.5,
+    "y": 1,
+    "z": null,
+    "area": 0.5
+  },
+  "tolerance": {
+    "min": -0.2,
+    "max": 0.2
+  },
+  "manufacturer_aliases": [
+    "Murata Electronics"
+  ],
+  "manufacturer": "MURATA",
+  "sellers": [],
+  "vendor_part_numbers": {
+    "lcsc": "C910650",
+    "digi-key": "490-18068-1-ND"
+  },
+  "stock": 8242,
+  "query-properties": {
+    "inductance": 1e-05,
+    "category": "inductor"
+  },
+  "trust": "low",
+  "shielding": "shielded",
+  "minimum_quantity": 5,
+  "quality-factor": null,
+  "max_current": null,
+  "cofactr_id": "INSICDQF84ZJ",
+  "mounting": "smd",
+  "mpn_aliases": [
+    "LQW15DN100M00D"
+  ],
+  "rated-temperature": {
+    "min": -40,
+    "max": 85
+  },
+  "mpn": "LQW15DN100M00D",
+  "metadata": {
+    "description": "120mA 10uH \u00b120% 120mA 0402  Power Inductors ROHS",
+    "packaging": "Cut Tape (CT)"
+  },
+  "case": "0402",
+  "current-rating": 0.12,
+  "inductance": 1e-05,
+  "updated_at": "2025-03-26T00:28:41Z",
+  "self-resonant-frequency": 20000000,
+  "_id": "MURATA-LQW15DN100M00D",
+  "type": "Wirewound",
+  "description": "120mA 10uH \u00b120% 120mA 0402  Power Inductors ROHS",
+  "rated-power": null,
+  "component": {
+    "name": "C910650",
+    "description": "120mA 10uH \u00b120% 120mA 0402  Power Inductors ROHS",
+    "manufacturer": "MURATA",
+    "mpn": "LQW15DN100M00D",
+    "datasheet": "https://www.lcsc.com/datasheet/lcsc_datasheet_2306301615_Murata-Electronics-LQW15DN100M00D_C910650.pdf",
+    "reference_prefix": "L",
+    "emodel": {
+      "type": "inductor",
+      "value": {
+        "inductance": 1e-05,
+        "tolerance": 0.2,
+        "max_current": null
+      }
+    },
+    "pin_properties": {
+      "pins": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            }
+          ],
+          "direction": "Up",
+          "electrical_type": "passive",
+          "bank": 0
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            }
+          ],
+          "direction": "Down",
+          "electrical_type": "passive",
+          "bank": 0
+        }
+      ],
+      "power_pins": [],
+      "no_connects": []
+    },
+    "pcb_pads": [
+      {
+        "name": "rect-smd-pad",
+        "type": "SMD",
+        "shape": {
+          "type": "rectangle",
+          "value": {
+            "width": 0.6,
+            "height": 0.28027756377319946,
+            "pose": {
+              "center": {
+                "x": 0,
+                "y": 0
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "layer_specifier": {
+              "type": "paste",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.6,
+                "height": 0.28027756377319946,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          },
+          {
+            "layer_specifier": {
+              "type": "solder_mask",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.7,
+                "height": 0.38027756377319943,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "landpattern": {
+      "name": "0402",
+      "pads": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": 0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": -0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        }
+      ],
+      "pcb_layer_reference": {
+        "layer_specifier": {
+          "type": "silkscreen",
+          "value": {
+            "name": "F-SilkS",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">REF",
+          "size": 0.6,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.75,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "pcb_layer_value": {
+        "layer_specifier": {
+          "type": "custom_layer",
+          "value": {
+            "name": "Fab",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">VALUE",
+          "size": 0.3,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.6,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "layers": [
+        {
+          "layer_specifier": {
+            "type": "courtyard",
+            "value": {
+              "side": "Top"
+            }
+          },
+          "shape": {
+            "type": "rectangle",
+            "value": {
+              "width": 0.9,
+              "height": 1.4,
+              "pose": {
+                "center": {
+                  "x": 0,
+                  "y": 0
+                },
+                "angle": 0,
+                "flip_x": false
+              }
+            }
+          }
+        }
+      ],
+      "geometries": [],
+      "model3ds": [
+        {
+          "jitx_model_3d_id": "64d26194b789d8dc4b9ae260",
+          "comment": "Warning: This model has unknown transformation coordinates - please validate before use.",
+          "filename": "jitx-64d26194b789d8dc4b9ae260.stp",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0.36
+          },
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 90
+          },
+          "properties": [],
+          "comment_align": "result_from_alg"
+        }
+      ]
+    },
+    "symbols": [
+      {
+        "name": "inductor-sym",
+        "bank": 0,
+        "pins": [
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": 2.54
+            },
+            "direction": "Up",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          },
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": -2.54
+            },
+            "direction": "Down",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          }
+        ],
+        "layer_reference": {
+          "layer": "reference",
+          "text": {
+            "string": ">REF",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": 1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layer_value": {
+          "layer": "value",
+          "text": {
+            "string": ">VALUE",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": -1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": -2.54
+                  },
+                  {
+                    "x": 0,
+                    "y": -1.905
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "polyline",
+              "value": {
+                "width": 0.254,
+                "elements": [
+                  {
+                    "type": "arc",
+                    "value": {
+                      "center": {
+                        "x": 0,
+                        "y": 1.27
+                      },
+                      "radius": 0.635,
+                      "start_angle": 90,
+                      "angle": 180
+                    }
+                  },
+                  {
+                    "type": "arc",
+                    "value": {
+                      "center": {
+                        "x": 0,
+                        "y": 0
+                      },
+                      "radius": 0.635,
+                      "start_angle": 90,
+                      "angle": 180
+                    }
+                  },
+                  {
+                    "type": "arc",
+                    "value": {
+                      "center": {
+                        "x": 0,
+                        "y": -1.27
+                      },
+                      "radius": 0.635,
+                      "start_angle": 90,
+                      "angle": 180
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": 1.905
+                  },
+                  {
+                    "x": 0,
+                    "y": 2.54
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "metadata": [],
+    "properties": [
+      {
+        "name": "category",
+        "value": {
+          "type": "TypeString",
+          "value": "inductor"
+        }
+      },
+      {
+        "name": "manufacturer",
+        "value": {
+          "type": "TypeString",
+          "value": "Murata Electronics"
+        }
+      },
+      {
+        "name": "manufacturer_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "Murata Electronics"
+            }
+          ]
+        }
+      },
+      {
+        "name": "mpn",
+        "value": {
+          "type": "TypeString",
+          "value": "LQW15DN100M00D"
+        }
+      },
+      {
+        "name": "mpn_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "LQW15DN100M00D"
+            }
+          ]
+        }
+      },
+      {
+        "name": "cofactr_id",
+        "value": {
+          "type": "TypeString",
+          "value": "INSICDQF84ZJ"
+        }
+      },
+      {
+        "name": "reference_prefix",
+        "value": {
+          "type": "TypeString",
+          "value": "L"
+        }
+      },
+      {
+        "name": "trust",
+        "value": {
+          "type": "TypeString",
+          "value": "low"
+        }
+      },
+      {
+        "name": "x",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "y",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1
+        }
+      },
+      {
+        "name": "area",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "case",
+        "value": {
+          "type": "TypeString",
+          "value": "0402"
+        }
+      },
+      {
+        "name": "mounting",
+        "value": {
+          "type": "TypeString",
+          "value": "smd"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.digi-key",
+        "value": {
+          "type": "TypeString",
+          "value": "490-18068-1-ND"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.lcsc",
+        "value": {
+          "type": "TypeString",
+          "value": "C910650"
+        }
+      },
+      {
+        "name": "minimum_quantity",
+        "value": {
+          "type": "TypeInt",
+          "value": 5
+        }
+      },
+      {
+        "name": "price",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.34942029
+        }
+      },
+      {
+        "name": "stock",
+        "value": {
+          "type": "TypeInt",
+          "value": 8242
+        }
+      },
+      {
+        "name": "rated-temperature",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 22.5,
+            "plus": 62.5,
+            "minus": 62.5
+          }
+        }
+      },
+      {
+        "name": "inductor",
+        "value": {
+          "type": "TypeBoolean",
+          "value": true
+        }
+      },
+      {
+        "name": "inductance",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1e-05
+        }
+      },
+      {
+        "name": "type",
+        "value": {
+          "type": "TypeString",
+          "value": "Wirewound"
+        }
+      },
+      {
+        "name": "material-core",
+        "value": {
+          "type": "TypeString",
+          "value": "ferrite"
+        }
+      },
+      {
+        "name": "shielding",
+        "value": {
+          "type": "TypeString",
+          "value": "shielded"
+        }
+      },
+      {
+        "name": "current-rating",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.12
+        }
+      },
+      {
+        "name": "saturation-current",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.12
+        }
+      },
+      {
+        "name": "dc-resistance",
+        "value": {
+          "type": "TypeDouble",
+          "value": 5.405
+        }
+      },
+      {
+        "name": "self-resonant-frequency",
+        "value": {
+          "type": "TypeDouble",
+          "value": 20000000
+        }
+      },
+      {
+        "name": "tolerance",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 1e-05,
+            "plus": 2e-06,
+            "minus": 2e-06
+          }
+        }
+      },
+      {
+        "name": "metadata.description",
+        "value": {
+          "type": "TypeString",
+          "value": "120mA 10uH \u00b120% 120mA 0402  Power Inductors ROHS"
+        }
+      },
+      {
+        "name": "metadata.packaging",
+        "value": {
+          "type": "TypeString",
+          "value": "Cut Tape (CT)"
+        }
+      }
+    ],
+    "bundles": [],
+    "supports": []
+  },
+  "saturation-current": 0.12,
+  "category": "inductor",
+  "git_sha": "f0fbc203d1e26c0ea331645260372e87d3c014ee"
+}

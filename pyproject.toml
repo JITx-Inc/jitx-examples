@@ -1,0 +1,118 @@
+# pyproject.toml
+
+[build-system]
+requires = [
+  "hatchling>=1.27.0,<2.0",
+  "hatch-vcs>=0.5.0,<0.6.0",
+  "ruff==0.14.9",
+  "pyright>=1.1.398,<1.2.0",
+]
+build-backend = "hatchling.build"
+
+[project]
+name = "jitxexamples"
+dynamic = ["version"]
+dependencies = [
+  "jitx>=4.0.0,<5",
+  "jitxlib-standard>=4.0.0,<5",
+  "jitxlib-parts>=1.0.0,<2",
+  "jitxlib-voltage-divider>=1.0.0,<2",
+  "eseries",
+  "pytest",
+]
+requires-python = ">=3.12"
+authors = [
+  {name = "JITX"}
+]
+maintainers = [
+  {name = "JITX"}
+]
+description = "Library of example JITX components"
+
+[project.urls]
+Homepage = "https://jitx.com"
+Documentation = "https://docs.jitx.com"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/jitxexamples"]
+
+[tool]
+
+# tests: run "hatch test --cover"
+[tool.hatch.envs.hatch-test]
+randomize = true
+parallel = false
+installer = "pip"
+extra-args = ["-vv"]
+dependencies = [
+  "coverage[toml]",
+  "pytest",
+  "pytest-cov",
+]
+
+[[tool.hatch.envs.test.matrix]]
+python = ["3.12", "3.13", "3.14"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.hatch.version]
+source = "vcs"
+fallback-version = "0.0.0+undefined"
+
+# formatting: run "hatch fmt --check"
+[tool.hatch.envs.hatch-static-analysis]
+dependencies = ["ruff==0.14.9"]
+config-path = "none"  # don't use hatch defaults
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.lint]
+# To enable:
+# UP, TC
+select = ["E", "F", "W", "A", "B", "C"]
+# E501 line too long - let ruff format handle that
+# A002 variable shadowing built-in (id, min, max)
+# A005 builtin module shadowing (false positive)
+# C901 mccabe complexity check, limits to 10
+ignore = ["E501", "A005", "C901", "A002"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+skip-magic-trailing-comma = false
+
+# pyright: run "hatch run types:check"
+[tool.hatch.envs.types]
+extra-dependencies = [
+  "pyright>=1.1.0",
+  "sphinx>=8.1.0,<9.0",
+]
+
+[tool.hatch.envs.types.scripts]
+check = "pyright ."
+stats = "pyright --stats ."
+
+[tool.pyright]
+exclude = [
+    "docs"
+]
+typeCheckingMode = "standard"
+reportMissingImports = "warning"
+
+[tool.coverage.run]
+# Only track coverage for our source code, not JITX library internals
+source = ["src"]
+omit = ["dummy", "**/dummy"]
+
+[tool.coverage.report]
+# Ignore errors about missing source files (jitxlib uses "dummy" as the
+# filename for dynamically compiled code from parts database queries)
+ignore_errors = true
+
+[tool.jitx]
+exclude = ["docs"]

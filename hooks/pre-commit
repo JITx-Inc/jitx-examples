@@ -1,0 +1,20 @@
+#!/bin/bash -e
+
+# Redirect output to stderr.
+exec 1>&2
+
+root=$(git rev-parse --show-toplevel)
+pyfiles=$(git diff --cached --name-only --diff-filter=AM | awk '/\.py$/')
+
+if [ -n "$pyfiles" ]; then
+  ruff check --quiet $pyfiles
+  ruff format --silent --diff $pyfiles
+fi
+
+(
+  cd $root
+  python -m unittest discover
+)
+
+# If there are whitespace errors, print the offending file names and fail.
+exec git diff-index --check --cached HEAD --

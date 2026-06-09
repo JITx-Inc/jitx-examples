@@ -1,0 +1,727 @@
+{
+  "resolved_price": 0.0015,
+  "esr": null,
+  "cofactr-fetch": false,
+  "price": 0.00526087,
+  "electrolyte": null,
+  "dimensions": {
+    "x": 0.5,
+    "y": 1,
+    "z": 0.55,
+    "area": 0.5
+  },
+  "tolerance": {
+    "min": -0.1,
+    "max": 0.1
+  },
+  "manufacturer_aliases": [
+    "YAGEO"
+  ],
+  "manufacturer": "YAGEO",
+  "sellers": [],
+  "vendor_part_numbers": {
+    "lcsc": "C1853702",
+    "digi-key": "13-CC0402KPX7R8BB104TR-ND"
+  },
+  "rated-voltage": 25,
+  "stock": 0,
+  "query-properties": {
+    "capacitance": 1e-07,
+    "category": "capacitor",
+    "case": [
+      "0402"
+    ]
+  },
+  "trust": "low",
+  "rated-voltage-ac": null,
+  "minimum_quantity": 20,
+  "temperature-coefficient": {
+    "code": "X7R",
+    "raw_data": "X7R",
+    "lower-temperature": -55,
+    "upper-temperature": 125
+  },
+  "cofactr_id": "CC0G3X4JZMUY",
+  "esr_frequency": null,
+  "anode": null,
+  "mounting": "smd",
+  "mpn_aliases": [
+    "CC0402KPX7R8BB104"
+  ],
+  "rated-temperature": {
+    "min": -55,
+    "max": 125
+  },
+  "mpn": "CC0402KPX7R8BB104",
+  "capacitance": 1e-07,
+  "metadata": {
+    "description": "25V 100nF X7R \u00b110% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+    "packaging": "Tape & Reel (TR)",
+    "ripple-current-low-frequency": null,
+    "ripple-current-high-frequency": null,
+    "lifetime-temp": null,
+    "applications": "General Purpose",
+    "lead-spacing": null
+  },
+  "case": "0402",
+  "updated_at": "2025-03-26T00:28:41Z",
+  "rated-current-pk": null,
+  "_id": "YAGEO-CC0402KPX7R8BB104",
+  "type": "ceramic",
+  "rated-current-rms": null,
+  "description": "25V 100nF X7R \u00b110% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+  "rated-power": null,
+  "component": {
+    "name": "my-capacitor",
+    "description": "25V 100nF X7R \u00b110% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS",
+    "manufacturer": "YAGEO",
+    "mpn": "CC0402KPX7R8BB104",
+    "datasheet": "https://www.lcsc.com/datasheet/lcsc_datasheet_2201271100_YAGEO-CC0402KPX7R8BB104_C1853702.pdf",
+    "reference_prefix": "C",
+    "emodel": {
+      "type": "capacitor",
+      "value": {
+        "capacitance": 1e-07,
+        "tolerance": 0.1,
+        "max_voltage": 25,
+        "polarized": false,
+        "low_esr": null,
+        "temperature_coefficient": "X7R",
+        "dielectric": null
+      }
+    },
+    "pin_properties": {
+      "pins": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            }
+          ],
+          "direction": "Up",
+          "electrical_type": "passive",
+          "bank": 0
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            }
+          ],
+          "direction": "Down",
+          "electrical_type": "passive",
+          "bank": 0
+        }
+      ],
+      "power_pins": [],
+      "no_connects": []
+    },
+    "pcb_pads": [
+      {
+        "name": "rect-smd-pad",
+        "type": "SMD",
+        "shape": {
+          "type": "rectangle",
+          "value": {
+            "width": 0.6,
+            "height": 0.28027756377319946,
+            "pose": {
+              "center": {
+                "x": 0,
+                "y": 0
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "layer_specifier": {
+              "type": "paste",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.6,
+                "height": 0.28027756377319946,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          },
+          {
+            "layer_specifier": {
+              "type": "solder_mask",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.7,
+                "height": 0.38027756377319943,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "landpattern": {
+      "name": "0402",
+      "pads": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": 0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": -0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        }
+      ],
+      "pcb_layer_reference": {
+        "layer_specifier": {
+          "type": "silkscreen",
+          "value": {
+            "name": "F-SilkS",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">REF",
+          "size": 0.6,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.75,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "pcb_layer_value": {
+        "layer_specifier": {
+          "type": "custom_layer",
+          "value": {
+            "name": "Fab",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">VALUE",
+          "size": 0.3,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.6,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "layers": [
+        {
+          "layer_specifier": {
+            "type": "courtyard",
+            "value": {
+              "side": "Top"
+            }
+          },
+          "shape": {
+            "type": "rectangle",
+            "value": {
+              "width": 0.9,
+              "height": 1.4,
+              "pose": {
+                "center": {
+                  "x": 0,
+                  "y": 0
+                },
+                "angle": 0,
+                "flip_x": false
+              }
+            }
+          }
+        }
+      ],
+      "geometries": [],
+      "model3ds": [
+        {
+          "jitx_model_3d_id": "64d1493ab789d8dc4b7b3f0a",
+          "comment": "Warning: This 3D Model matched by AI.",
+          "filename": "jitx-64d1493ab789d8dc4b7b3f0a.stp",
+          "position": {
+            "x": 0,
+            "y": 0,
+            "z": 0
+          },
+          "scale": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+          },
+          "rotation": {
+            "x": 0,
+            "y": 0,
+            "z": 90
+          },
+          "properties": []
+        }
+      ]
+    },
+    "symbols": [
+      {
+        "name": "capacitor-sym",
+        "bank": 0,
+        "pins": [
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": 2.54
+            },
+            "direction": "Up",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          },
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": -2.54
+            },
+            "direction": "Down",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          }
+        ],
+        "layer_reference": {
+          "layer": "reference",
+          "text": {
+            "string": ">REF",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": 1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layer_value": {
+          "layer": "value",
+          "text": {
+            "string": ">VALUE",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": -1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": 2.54
+                  },
+                  {
+                    "x": 0,
+                    "y": 0.508
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": -1.27,
+                    "y": 0.508
+                  },
+                  {
+                    "x": 1.27,
+                    "y": 0.508
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": -0.508
+                  },
+                  {
+                    "x": 0,
+                    "y": -2.54
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": -1.27,
+                    "y": -0.508
+                  },
+                  {
+                    "x": 1.27,
+                    "y": -0.508
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "metadata": [],
+    "properties": [
+      {
+        "name": "category",
+        "value": {
+          "type": "TypeString",
+          "value": "capacitor"
+        }
+      },
+      {
+        "name": "manufacturer",
+        "value": {
+          "type": "TypeString",
+          "value": "YAGEO"
+        }
+      },
+      {
+        "name": "manufacturer_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "YAGEO"
+            }
+          ]
+        }
+      },
+      {
+        "name": "mpn",
+        "value": {
+          "type": "TypeString",
+          "value": "CC0402KPX7R8BB104"
+        }
+      },
+      {
+        "name": "mpn_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "CC0402KPX7R8BB104"
+            }
+          ]
+        }
+      },
+      {
+        "name": "cofactr_id",
+        "value": {
+          "type": "TypeString",
+          "value": "CC0G3X4JZMUY"
+        }
+      },
+      {
+        "name": "reference_prefix",
+        "value": {
+          "type": "TypeString",
+          "value": "C"
+        }
+      },
+      {
+        "name": "trust",
+        "value": {
+          "type": "TypeString",
+          "value": "low"
+        }
+      },
+      {
+        "name": "x",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "y",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1
+        }
+      },
+      {
+        "name": "area",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "z",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.55
+        }
+      },
+      {
+        "name": "case",
+        "value": {
+          "type": "TypeString",
+          "value": "0402"
+        }
+      },
+      {
+        "name": "mounting",
+        "value": {
+          "type": "TypeString",
+          "value": "smd"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.digi-key",
+        "value": {
+          "type": "TypeString",
+          "value": "13-CC0402KPX7R8BB104TR-ND"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.lcsc",
+        "value": {
+          "type": "TypeString",
+          "value": "C1853702"
+        }
+      },
+      {
+        "name": "minimum_quantity",
+        "value": {
+          "type": "TypeInt",
+          "value": 20
+        }
+      },
+      {
+        "name": "price",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.00526087
+        }
+      },
+      {
+        "name": "stock",
+        "value": {
+          "type": "TypeInt",
+          "value": 0
+        }
+      },
+      {
+        "name": "rated-temperature",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 35,
+            "plus": 90,
+            "minus": 90
+          }
+        }
+      },
+      {
+        "name": "capacitor",
+        "value": {
+          "type": "TypeBoolean",
+          "value": true
+        }
+      },
+      {
+        "name": "capacitance",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1e-07
+        }
+      },
+      {
+        "name": "type",
+        "value": {
+          "type": "TypeString",
+          "value": "ceramic"
+        }
+      },
+      {
+        "name": "rated-voltage",
+        "value": {
+          "type": "TypeDouble",
+          "value": 25
+        }
+      },
+      {
+        "name": "temperature-coefficent",
+        "value": {
+          "type": "TypeString",
+          "value": "X7R"
+        }
+      },
+      {
+        "name": "tolerance",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 1e-07,
+            "plus": 1.000000000000001e-08,
+            "minus": 9.999999999999997e-09
+          }
+        }
+      },
+      {
+        "name": "metadata.description",
+        "value": {
+          "type": "TypeString",
+          "value": "25V 100nF X7R \u00b110% 0402  Multilayer Ceramic Capacitors MLCC - SMD/SMT ROHS"
+        }
+      },
+      {
+        "name": "metadata.packaging",
+        "value": {
+          "type": "TypeString",
+          "value": "Tape & Reel (TR)"
+        }
+      },
+      {
+        "name": "metadata.applications",
+        "value": {
+          "type": "TypeString",
+          "value": "General Purpose"
+        }
+      }
+    ],
+    "bundles": [],
+    "supports": []
+  },
+  "category": "capacitor",
+  "git_sha": "f0fbc203d1e26c0ea331645260372e87d3c014ee"
+}

@@ -1,0 +1,744 @@
+{
+  "resolved_price": 0.0022,
+  "cofactr-fetch": false,
+  "price": 0.012,
+  "dimensions": {
+    "x": 0.5,
+    "y": 1,
+    "z": 0.4,
+    "area": 0.5
+  },
+  "tolerance": {
+    "min": -0.01,
+    "max": 0.01
+  },
+  "manufacturer_aliases": [
+    "YAGEO"
+  ],
+  "manufacturer": "YAGEO",
+  "sellers": [],
+  "vendor_part_numbers": {
+    "lcsc": "C851821",
+    "digi-key": "YAG1254TR-ND"
+  },
+  "stock": 0,
+  "query-properties": {
+    "resistance": 1000,
+    "category": "resistor",
+    "case": [
+      "0402"
+    ]
+  },
+  "trust": "low",
+  "minimum_quantity": 20,
+  "cofactr_id": "XXMBURMARMKP",
+  "tcr": {
+    "neg": 0.00015,
+    "pos": 0.00015
+  },
+  "mounting": "smd",
+  "composition": "thick-film",
+  "mpn_aliases": [
+    "RC0402FR-071KP"
+  ],
+  "rated-temperature": {
+    "min": -55,
+    "max": 155
+  },
+  "mpn": "RC0402FR-071KP",
+  "metadata": {
+    "description": "63mW Thick Film Resistors \u00b1100ppm/\u2103 \u00b11% 1k\u03a9 0402  Chip Resistor - Surface Mount ROHS",
+    "series": null,
+    "packaging": "Tape & Reel (TR)",
+    "features": "Moisture Resistant",
+    "supplier-device-package": "402",
+    "number-of-terminations": 2
+  },
+  "case": "0402",
+  "series": null,
+  "updated_at": "2025-03-26T00:28:41Z",
+  "resistance": 1000,
+  "_id": "YAGEO-RC0402FR-071KP",
+  "type": "chip",
+  "description": "63mW Thick Film Resistors \u00b1100ppm/\u2103 \u00b11% 1k\u03a9 0402  Chip Resistor - Surface Mount ROHS",
+  "rated-power": 0.063,
+  "component": {
+    "name": "my-resistor",
+    "description": "63mW Thick Film Resistors \u00b1100ppm/\u2103 \u00b11% 1k\u03a9 0402  Chip Resistor - Surface Mount ROHS",
+    "manufacturer": "YAGEO",
+    "mpn": "RC0402FR-071KP",
+    "datasheet": "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2306061131_YAGEO-RC0402FR-071KP_C851821.pdf",
+    "reference_prefix": "R",
+    "emodel": {
+      "type": "resistor",
+      "value": {
+        "resistance": 1000,
+        "tolerance": 0.01,
+        "max_power": 0.063
+      }
+    },
+    "pin_properties": {
+      "pins": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            }
+          ],
+          "direction": "Up",
+          "electrical_type": "passive",
+          "bank": 0
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pads": [
+            {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            }
+          ],
+          "direction": "Down",
+          "electrical_type": "passive",
+          "bank": 0
+        }
+      ],
+      "power_pins": [],
+      "no_connects": []
+    },
+    "pcb_pads": [
+      {
+        "name": "rect-smd-pad",
+        "type": "SMD",
+        "shape": {
+          "type": "rectangle",
+          "value": {
+            "width": 0.6,
+            "height": 0.28027756377319946,
+            "pose": {
+              "center": {
+                "x": 0,
+                "y": 0
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "layer_specifier": {
+              "type": "paste",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.6,
+                "height": 0.28027756377319946,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          },
+          {
+            "layer_specifier": {
+              "type": "solder_mask",
+              "value": {
+                "side": "Top"
+              }
+            },
+            "shape": {
+              "type": "rectangle",
+              "value": {
+                "width": 0.7,
+                "height": 0.38027756377319943,
+                "pose": {
+                  "center": {
+                    "x": 0,
+                    "y": 0
+                  },
+                  "angle": 0,
+                  "flip_x": false
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "landpattern": {
+      "name": "0402",
+      "pads": [
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 1
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": 0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        },
+        {
+          "pin": {
+            "type": "pin_by_index",
+            "value": {
+              "name": "p",
+              "index": 2
+            }
+          },
+          "pcb_pad_name": "rect-smd-pad",
+          "pose": {
+            "center": {
+              "x": 0,
+              "y": -0.4098612181134003
+            },
+            "angle": 0,
+            "flip_x": false
+          },
+          "side": "Top"
+        }
+      ],
+      "pcb_layer_reference": {
+        "layer_specifier": {
+          "type": "silkscreen",
+          "value": {
+            "name": "F-SilkS",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">REF",
+          "size": 0.6,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.75,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "pcb_layer_value": {
+        "layer_specifier": {
+          "type": "custom_layer",
+          "value": {
+            "name": "Fab",
+            "side": "Top"
+          }
+        },
+        "text": {
+          "string": ">VALUE",
+          "size": 0.3,
+          "anchor": "C",
+          "pose": {
+            "center": {
+              "x": 0.6,
+              "y": 0
+            },
+            "angle": 270,
+            "flip_x": false
+          }
+        }
+      },
+      "layers": [
+        {
+          "layer_specifier": {
+            "type": "courtyard",
+            "value": {
+              "side": "Top"
+            }
+          },
+          "shape": {
+            "type": "rectangle",
+            "value": {
+              "width": 0.9,
+              "height": 1.4,
+              "pose": {
+                "center": {
+                  "x": 0,
+                  "y": 0
+                },
+                "angle": 0,
+                "flip_x": false
+              }
+            }
+          }
+        }
+      ],
+      "geometries": [],
+      "model3ds": []
+    },
+    "symbols": [
+      {
+        "name": "resistor-sym",
+        "bank": 0,
+        "pins": [
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 1
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": 2.54
+            },
+            "direction": "Up",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          },
+          {
+            "pin": {
+              "type": "pin_by_index",
+              "value": {
+                "name": "p",
+                "index": 2
+              }
+            },
+            "point": {
+              "x": 0,
+              "y": -2.54
+            },
+            "direction": "Down",
+            "length": 0,
+            "number_size": 0,
+            "name_size": 0
+          }
+        ],
+        "layer_reference": {
+          "layer": "reference",
+          "text": {
+            "string": ">REF",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": 1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layer_value": {
+          "layer": "value",
+          "text": {
+            "string": ">VALUE",
+            "size": 1.27,
+            "anchor": "W",
+            "pose": {
+              "center": {
+                "x": 1.27,
+                "y": -1.27
+              },
+              "angle": 0,
+              "flip_x": false
+            }
+          }
+        },
+        "layers": [
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": -2.54
+                  },
+                  {
+                    "x": 0,
+                    "y": -1.5875
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "polyline",
+              "value": {
+                "width": 0.254,
+                "elements": [
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": 0,
+                      "y": -1.5875
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": -0.762,
+                      "y": -1.27
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": 0.762,
+                      "y": -0.635
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": -0.762,
+                      "y": 0
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": 0.762,
+                      "y": 0.635
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": -0.762,
+                      "y": 1.27
+                    }
+                  },
+                  {
+                    "type": "point",
+                    "value": {
+                      "x": 0,
+                      "y": 1.5875
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "name": "foreground",
+            "shape": {
+              "type": "line",
+              "value": {
+                "width": 0.254,
+                "points": [
+                  {
+                    "x": 0,
+                    "y": 1.5875
+                  },
+                  {
+                    "x": 0,
+                    "y": 2.54
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "metadata": [],
+    "properties": [
+      {
+        "name": "category",
+        "value": {
+          "type": "TypeString",
+          "value": "resistor"
+        }
+      },
+      {
+        "name": "manufacturer",
+        "value": {
+          "type": "TypeString",
+          "value": "YAGEO"
+        }
+      },
+      {
+        "name": "manufacturer_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "YAGEO"
+            }
+          ]
+        }
+      },
+      {
+        "name": "mpn",
+        "value": {
+          "type": "TypeString",
+          "value": "RC0402FR-071KP"
+        }
+      },
+      {
+        "name": "mpn_aliases",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeString",
+              "value": "RC0402FR-071KP"
+            }
+          ]
+        }
+      },
+      {
+        "name": "cofactr_id",
+        "value": {
+          "type": "TypeString",
+          "value": "XXMBURMARMKP"
+        }
+      },
+      {
+        "name": "reference_prefix",
+        "value": {
+          "type": "TypeString",
+          "value": "R"
+        }
+      },
+      {
+        "name": "trust",
+        "value": {
+          "type": "TypeString",
+          "value": "low"
+        }
+      },
+      {
+        "name": "x",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "y",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1
+        }
+      },
+      {
+        "name": "area",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.5
+        }
+      },
+      {
+        "name": "z",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.4
+        }
+      },
+      {
+        "name": "case",
+        "value": {
+          "type": "TypeString",
+          "value": "0402"
+        }
+      },
+      {
+        "name": "mounting",
+        "value": {
+          "type": "TypeString",
+          "value": "smd"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.digi-key",
+        "value": {
+          "type": "TypeString",
+          "value": "YAG1254TR-ND"
+        }
+      },
+      {
+        "name": "vendor_part_numbers.lcsc",
+        "value": {
+          "type": "TypeString",
+          "value": "C851821"
+        }
+      },
+      {
+        "name": "minimum_quantity",
+        "value": {
+          "type": "TypeInt",
+          "value": 20
+        }
+      },
+      {
+        "name": "price",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.012
+        }
+      },
+      {
+        "name": "stock",
+        "value": {
+          "type": "TypeInt",
+          "value": 0
+        }
+      },
+      {
+        "name": "rated-temperature",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 50,
+            "plus": 105,
+            "minus": 105
+          }
+        }
+      },
+      {
+        "name": "rated-power",
+        "value": {
+          "type": "TypeDouble",
+          "value": 0.063
+        }
+      },
+      {
+        "name": "resistor",
+        "value": {
+          "type": "TypeBoolean",
+          "value": true
+        }
+      },
+      {
+        "name": "resistance",
+        "value": {
+          "type": "TypeDouble",
+          "value": 1000
+        }
+      },
+      {
+        "name": "type",
+        "value": {
+          "type": "TypeString",
+          "value": "chip"
+        }
+      },
+      {
+        "name": "composition",
+        "value": {
+          "type": "TypeString",
+          "value": "thick-film"
+        }
+      },
+      {
+        "name": "TCR",
+        "value": {
+          "type": "TypeTupleValueByType",
+          "value": [
+            {
+              "type": "TypeDouble",
+              "value": -0.00015
+            },
+            {
+              "type": "TypeDouble",
+              "value": 0.00015
+            }
+          ]
+        }
+      },
+      {
+        "name": "tolerance",
+        "value": {
+          "type": "TypeToleranced",
+          "value": {
+            "typical": 1000,
+            "plus": 10,
+            "minus": 10
+          }
+        }
+      },
+      {
+        "name": "metadata.description",
+        "value": {
+          "type": "TypeString",
+          "value": "63mW Thick Film Resistors \u00b1100ppm/\u2103 \u00b11% 1k\u03a9 0402  Chip Resistor - Surface Mount ROHS"
+        }
+      },
+      {
+        "name": "metadata.packaging",
+        "value": {
+          "type": "TypeString",
+          "value": "Tape & Reel (TR)"
+        }
+      },
+      {
+        "name": "metadata.features",
+        "value": {
+          "type": "TypeString",
+          "value": "Moisture Resistant"
+        }
+      },
+      {
+        "name": "metadata.supplier-device-package",
+        "value": {
+          "type": "TypeString",
+          "value": "402"
+        }
+      },
+      {
+        "name": "metadata.number-of-terminations",
+        "value": {
+          "type": "TypeDouble",
+          "value": 2
+        }
+      }
+    ],
+    "bundles": [],
+    "supports": []
+  },
+  "category": "resistor",
+  "git_sha": "f0fbc203d1e26c0ea331645260372e87d3c014ee"
+}
