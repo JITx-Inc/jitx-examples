@@ -1,0 +1,10 @@
+# Dotfiles/dotdirs: ignore by default, re-include the ones we track.
+.*
+!.gitignore
+!.github
+
+# Build / cache outputs.
+**/cache/
+designs/jitxexamples.designs.si_bga_optimization.*/design-info/
+__pycache__/
+*.py[cod]
