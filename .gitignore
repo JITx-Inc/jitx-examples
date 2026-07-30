@@ -6,5 +6,6 @@
 # Build / cache outputs.
 **/cache/
 designs/jitxexamples.designs.si_bga_optimization.*/design-info/
+3d-models/
 __pycache__/
 *.py[cod]

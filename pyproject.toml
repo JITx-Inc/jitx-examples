@@ -27,7 +27,7 @@ authors = [
 maintainers = [
   {name = "JITX"}
 ]
-description = "Library of example JITX components"
+description = "Library of example JITX components, substrates, and designs"
 
 [project.urls]
 Homepage = "https://jitx.com"

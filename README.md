@@ -2,7 +2,11 @@
 
 ## What this is
 
-`jitxexamples` is a library of example JITX **component** definitions — Python classes that model real, sourceable electronic parts (op-amps, FETs, MCUs, regulators, connectors, sensors, etc.) for use with the JITX PCB design framework. It is a parts library, **not** a board design: there is no top-level `main`/design module and no `jitx build` entry point here. Each component is an independent, self-contained class.
+`jitxexamples` is a library of example JITX package contents:
+
+- **Components**: Python classes that model real, sourceable electronic parts (op-amps, FETs, MCUs, regulators, connectors, sensors, etc.) for use with the JITX PCB design framework.
+- **Substrates**: reusable PCB stackups, via definitions, and fabrication constraints.
+- **Designs**: buildable example boards that compose package components, substrates, routing rules, and geometry into complete JITX designs.
 
 ## Commands
 
@@ -14,6 +18,17 @@ hatch run types:stats     # pyright stats
 
 pytest tests/test_AO3401A.py            # run a single test file
 pytest tests/test_AO3401A.py -k ao3401a # run a single test
+```
+
+### Run designs
+
+JITX design builds require an installed and running JITX runtime. From the project root:
+
+```bash
+jitx runtime start --background
+jitx find
+jitx build jitxexamples.designs.si_bga_optimization.bga_escape.bga_optimization_design
+jitx ui open --board --design jitxexamples.designs.si_bga_optimization.bga_escape.bga_optimization_design
 ```
 
 The git `pre-commit` hook (`hooks/pre-commit`) runs `ruff check`, `ruff format --diff`, and `python -m unittest discover` on staged Python files. Install it with `git config core.hooksPath hooks` (or symlink into `.git/hooks/`).
@@ -34,9 +49,17 @@ A component class is declarative. The standard shape (see `components/opamps/tex
 
 Some files ship an accompanying `.stp` (3D STEP model) alongside the `.py`. Some components also alias the class as `Device: type[...] = ...`.
 
+### Substrate definitions (`src/jitxexamples/substrates/`)
+Substrates define reusable PCB construction details. `generic_20layer.py` provides `Generic_Substrate`, a generic 20-layer stackup with dielectric/conductor materials, fabrication constraints, and via classes that designs can use directly or specialize.
+
+### Design definitions (`src/jitxexamples/designs/`)
+Designs are buildable JITX `SampleDesign` classes. The SI BGA optimization example lives under `designs/si_bga_optimization/`; its build target is `jitxexamples.designs.si_bga_optimization.bga_escape.bga_optimization_design`.
+
+Within that design package, `constraints.py` defines the design-rule `Tag` subclasses and the antipad fence-via `design_constraint` rules; `substrate.py` specializes the generic substrate with the 85 ohm stripline routing structure and per-signal-layer launch profiles (`BGAEscapeSubstrate`), anchoring the fence rules into the design tree; `si_geometry.py` builds the per-lane signal-via antipad, deskew-arc, GND-stitching, and board-level SI-cutout geometry, including the HFSS-instrumented-lane override; and `bga_escape.py` assembles the per-lane `EscapeLane` circuits into the top-level `BGALink` and holds the buildable `bga_optimization_design` entry point. `generic_bga.py` defines the reusable hex-grid BGA component used by the design, and `deskew.py` contains support geometry for the BGA diff-pair deskew copper.
+
 ### Tests (`tests/`)
 One `test_*.py` per component. Tests subclass `jitx.test.TestCase` (a `unittest.TestCase` that activates the JITX *instantiation context* in `setUpClass` — required so that JITX class members instantiate correctly; do not use plain `unittest.TestCase` for code that builds design elements). A test typically defines a `SampleDesign` subclass containing an `@inline class circuit(Circuit)` that instantiates the component, then asserts on the built design.
 
 ## Dependencies & environment
 
-Requires Python ≥3.12; the test matrix covers 3.12/3.13/3.14. Built with hatchling + hatch-vcs (version derived from git tags). Core deps: `jitx` (4.x), `jitxlib-standard`, `jitxlib-parts`, `jitxlib-voltage-divider`, `eseries`. The wheel packages only `src/jitxexamples`; `docs/` is excluded from both pyright and `[tool.jitx]`.
+Requires Python ≥3.12; the test matrix covers 3.12/3.13/3.14. Built with hatchling + hatch-vcs (version derived from git tags). Core deps: `jitx` (4.x), `jitxlib-standard`, `jitxlib-parts`, `jitxlib-voltage-divider`, `eseries`. The wheel packages `src/jitxexamples`; `docs/` is excluded from both pyright and `[tool.jitx]`.
