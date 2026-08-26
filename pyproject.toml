@@ -27,7 +27,7 @@ authors = [
 maintainers = [
   {name = "JITX"}
 ]
-description = "Library of example JITX components, substrates, and designs"
+description = "Library of example JITX components, substrates, and demo designs"
 
 [project.urls]
 Homepage = "https://jitx.com"
@@ -35,6 +35,14 @@ Documentation = "https://docs.jitx.com"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jitxexamples"]
+
+# The sdist otherwise ships the whole non-gitignored tree, which is how
+# `jumpstart-kits/` reaches docs.jitx.com (the docs build extracts it from the
+# released sdist). Only `exclude` is set here so that default file selection --
+# and therefore `jumpstart-kits/` -- is preserved. `internal/` is the one tree
+# held back: it is maintainer-only and must reach no deployment surface.
+[tool.hatch.build.targets.sdist]
+exclude = ["internal"]
 
 [tool]
 
@@ -97,9 +105,27 @@ extra-dependencies = [
 check = "pyright ."
 stats = "pyright --stats ."
 
+# deck builds: run "hatch run decks:part3"
+# Detached so python-pptx -- a deck-authoring tool, not a package dependency --
+# stays out of the project environment.
+[tool.hatch.envs.decks]
+detached = true
+dependencies = ["python-pptx>=1.0"]
+
+[tool.hatch.envs.decks.scripts]
+part3 = "python internal/deck-tooling/build_js1_part3.py"
+
 [tool.pyright]
+# Setting `exclude` REPLACES pyright's defaults, so the default patterns are
+# repeated here. Without `**/.*`, a project-local `.venv` (or any dotdir) gets
+# type-checked along with all of site-packages.
 exclude = [
-    "docs"
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "docs",
+    # Deck-authoring scripts; their python-pptx import is not a project dependency.
+    "internal",
 ]
 typeCheckingMode = "standard"
 reportMissingImports = "warning"
@@ -115,4 +141,4 @@ omit = ["dummy", "**/dummy"]
 ignore_errors = true
 
 [tool.jitx]
-exclude = ["docs"]
+exclude = ["docs", "internal"]

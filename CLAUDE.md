@@ -1,44 +1,91 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) working in this repository.
 
-## What this is
+## Read README.md first
 
-`jitxexamples` is a library of example JITX **component** definitions — Python classes that model real, sourceable electronic parts (op-amps, FETs, MCUs, regulators, connectors, sensors, etc.) for use with the JITX PCB design framework. It is a parts library, **not** a board design: there is no top-level `main`/design module and no `jitx build` entry point here. Each component is an independent, self-contained class.
+`README.md` is the single source of truth for what this repo is, its layout, the commands, and the
+demo build target. Read it — do not restate it here. This file holds only the things that are
+specifically about working *with an agent* in this repo.
 
-## Commands
+## Repo-specific rules
 
-```bash
-hatch test --cover        # run the test suite with coverage (canonical, per README)
-hatch fmt --check         # check formatting/lint (ruff 0.14.9, config in pyproject)
-hatch run types:check     # pyright type check
-hatch run types:stats     # pyright stats
+- **`designs/` at the repo root is JITX build output, not source.** `jitx build` creates
+  `<repo-root>/designs/<module.path.design_name>/` (`design-info/`, `temp/`, ...). That name is
+  chosen by JITX. The Python demo sources live in `src/jitxexamples/demos/` for exactly this reason.
+  Never add source under a root `designs/`, and never rename `demos/` back to `designs/`.
 
-pytest tests/test_AO3401A.py            # run a single test file
-pytest tests/test_AO3401A.py -k ao3401a # run a single test
-```
+- **Tests must subclass `jitx.test.TestCase`, never plain `unittest.TestCase`.**
+  `jitx.test.TestCase.setUpClass` activates the JITX *instantiation context*; without it, JITX class
+  members are not instantiated and assertions silently operate on placeholder objects rather than
+  real design elements.
 
-The git `pre-commit` hook (`hooks/pre-commit`) runs `ruff check`, `ruff format --diff`, and `python -m unittest discover` on staged Python files. Install it with `git config core.hooksPath hooks` (or symlink into `.git/hooks/`).
+- **`jitx.test.TestCase` does not need the JITX runtime.** It only activates the instantiation
+  context, so instantiating a `SampleDesign` works offline. Only `jitx build` / `jitx ui` need
+  `jitx runtime start`; `jitx build --dry <target>` translates a design without one.
 
-Lint is intentionally narrow: ruff `select = ["E","F","W","A","B","C"]` with `E501`, `A005`, `C901`, `A002` ignored. Line length 88, double quotes.
+- **The `jitx` version you get locally may not be the one CI uses.** Every constraint in
+  `pyproject.toml` is satisfiable from public PyPI with stable versions (jitx 4.2.2 today), which is
+  what CI's pip resolves. A uv-backed `hatch` env with `PIP_EXTRA_INDEX_URL` pointing at the internal
+  index pulls pre-releases instead (4.3/4.4), and the two lines differ in API — `PairPoint.pair`
+  versus `PairPoint.front`/`.back`, for one. `tests/test_bga_optimization_demo.py` is import-only
+  for exactly this reason. Before concluding that demo code is broken, check which `jitx` you
+  resolved, and note that `jitx build` also needs the runtime (`~/.jitx/current`) on the same line as
+  the library.
 
-## Architecture
+- **The parts database is mocked in tests.** `tests/conftest.py` installs an autouse fixture
+  patching `jitxlib.parts.query_api.dbquery` with fixtures from `captured_json/` and sets
+  `JITX_MOCK_PARTS_DB=1`. Do not add tests that require live parts-DB access.
 
-### Component definitions (`src/jitxexamples/components/<category>/`)
-Components are grouped into category packages (`opamps/`, `fets_n_ch/`, `mcus/`, `connectors/`, ...). Each `.py` file defines one component as a subclass of `jitx.Component`. The `__init__.py` files are empty — components are imported by their full module path (e.g. `from jitxexamples.components.fets_p_ch.AO3401A import AO3401A`).
+- **`src/jitxexamples/` is an implicit namespace package** (no `__init__.py`). Some `components/*`
+  subdirectories have an empty `__init__.py` and some do not. That inconsistency is known and
+  intentionally untouched — do not "fix" it as a drive-by.
 
-A component class is declarative. The standard shape (see `components/opamps/texas_instruments_OPA189.py`):
-- Metadata class attributes: `mpn`, `manufacturer`, `reference_designator_prefix`, `datasheet`.
-- `Port()` attributes for each pin/signal.
-- A `landpattern` built from a footprint generator (`jitxlib.landpatterns.generators.*`, e.g. `SOT23_5`) configured with `LeadProfile` and `jitx.Toleranced` dimensions.
-- A `symbol` from `jitxlib.symbols.*`.
-- A `mappings` list of `jitx.PadMapping` (port → `landpattern.p[n]`) and `jitx.SymbolMapping` (port → symbol pin).
+- **This repo is publicly mirrored** to `JITx-Inc/jitx-examples` on release
+  (`.github/workflows/mirror-main.yml` archives everything tracked except `.github/` and
+  `internal/`). Keep comments, docs, and placeholder text customer-appropriate.
 
-Some files ship an accompanying `.stp` (3D STEP model) alongside the `.py`. Some components also alias the class as `Device: type[...] = ...`.
+- **`internal/` is tracked but reaches no deployment surface.** It holds the JumpStart Kit specs,
+  program TODOs, and deck-production tooling that used to live in the now-deprecated
+  `JITx-Inc/jumpstart-kits`. Three surfaces publish out of this repo and all three work from tracked
+  files, so each excludes `internal/` explicitly: the sdist via
+  `[tool.hatch.build.targets.sdist] exclude`, the public mirror via `rm -rf "$MIRROR/internal"`, and
+  docs.jitx.com by only ever extracting `jumpstart-kits/` out of that sdist. Moving a file from
+  `internal/` into `jumpstart-kits/` **publishes it** — there is no per-file opt-out, because the
+  docs build's `exclude_patterns` is empty by contract. After touching the sdist config, verify both
+  directions: `tar tzf dist/jitxexamples-*.tar.gz` must list 28 `jumpstart-kits/` entries and no
+  `internal/` ones.
 
-### Tests (`tests/`)
-One `test_*.py` per component. Tests subclass `jitx.test.TestCase` (a `unittest.TestCase` that activates the JITX *instantiation context* in `setUpClass` — required so that JITX class members instantiate correctly; do not use plain `unittest.TestCase` for code that builds design elements). A test typically defines a `SampleDesign` subclass containing an `@inline class circuit(Circuit)` that instantiates the component, then asserts on the built design.
+- **The committed kit decks are generated; don't hand-edit the `.pptx`.**
+  `internal/deck-tooling/` holds the build scripts, and each writes straight into the kit directory
+  that publishes it — `jumpstart-kits/js0-setup/presentation/` for JS0, and the per-part directory
+  `jumpstart-kits/js1-stackup-components/part<N>-<slug>/` for each JS1 part. All four are on the
+  JITX brand (black, Arial, teal
+  `#01BFA5` / amber `#FEC107`, `jitX` mark on every slide) — see
+  `internal/deck-tooling/DESIGN-SYSTEM.md`. Neither generator is byte-deterministic, so verify a
+  rebuild with `internal/deck-tooling/deck_text.py`, which diffs slide text and speaker notes; a
+  restyle should leave that diff empty. Two earlier decks *were* patched at the XML level after
+  generation, which silently made their scripts unable to reproduce them — hence the rule.
 
-## Dependencies & environment
+- **Merge a `develop` → `main` release PR with "Create a merge commit", never "Squash and merge".**
+  Feature PRs into `develop` are squashed as usual; the release PR is the exception. Squashing
+  `develop` onto `main` collapses its history into one commit and erases the ancestry link, so git
+  falls back to a stale merge base and the *next* release PR reports every file both branches
+  touched as a spurious add/add conflict. Resolving those by hand also silently resurrects files
+  `develop` deliberately renamed or deleted, which is the trap — the conflicts look real.
 
-Requires Python ≥3.12; the test matrix covers 3.12/3.13/3.14. Built with hatchling + hatch-vcs (version derived from git tags). Core deps: `jitx` (4.x), `jitxlib-standard`, `jitxlib-parts`, `jitxlib-voltage-divider`, `eseries`. The wheel packages only `src/jitxexamples`; `docs/` is excluded from both pyright and `[tool.jitx]`.
+- **If a release ever does land on `main` as a squash, sync it back before opening the next one.**
+  Compare `git rev-parse origin/main^{tree}` against the tree of the `develop` commit that was
+  squashed. If the two OIDs match, `main` holds nothing `develop` lacks, so
+  `git merge -s ours origin/main` restores the ancestry without touching content; confirm with
+  `git diff --quiet origin/develop HEAD` before pushing. If the OIDs *differ*, something landed on
+  `main` directly — do a normal merge and resolve it for real.
+
+## Verification
+
+Run the commands in README.md's Commands section. Do not invent alternatives:
+`hatch test --cover`, `hatch fmt --check`, `hatch run types:check`.
+
+Note that the `pre-commit` hook is **not installed by default** (`core.hooksPath` is unset), and it
+invokes bare `python`, which may not be on PATH. Never treat a successful commit as evidence that
+the tests passed — run `hatch test --cover` explicitly.

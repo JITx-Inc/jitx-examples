@@ -5,7 +5,16 @@
 
 # Build / cache outputs.
 **/cache/
-designs/jitxexamples.designs.si_bga_optimization.*/design-info/
+# `jitx build` output: <repo-root>/designs/<module.path.design_name>/{design-info,temp,...}
+# The `designs` directory name is chosen by JITX, not by us — hence the Python
+# package is `demos`. Anchored: only the repo-root output tree.
+/designs/
 3d-models/
 __pycache__/
 *.py[cod]
+
+# `hatch build` output.
+/dist/
+
+# Deck-build dependencies, restored with `npm install` from the committed lockfile.
+node_modules/
