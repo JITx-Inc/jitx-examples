@@ -1,5 +1,5 @@
 <!--
-JITX Setup Runbook (JS0) · rev 1.1 · 2026-08-27
+JITX Setup Runbook (JS0) · rev 1.2 · 2026-08-28
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it.
 -->
@@ -93,7 +93,7 @@ jitx find
 
 > **Opening the views — what to expect.**
 >
-> - **The first window is slow.** The very first board or schematic view in 5a can take **3–4 minutes** to appear. Wait for it, and tell me it's coming — do **not** re-run the command or report it broken. If nothing has appeared after **5 minutes**, tell me. Every later view, 5b's included, comes up much faster.
+> - **The first window may be slow.** The very first board or schematic view in 5a can take a few minutes to appear — more likely on macOS. If it doesn't come up straight away, wait for it and tell me it's coming — do **not** re-run the command or report it broken. If nothing has appeared after **5 minutes**, tell me. Any later view, 5b's included, comes up faster.
 > - **`jitx ui open` blocks while its window is open**, so launch it in the background rather than letting it hang your shell for the whole session. Later calls return immediately and add their windows to the JITX app already running — there's no limit on how many views can be open at once, so leave 5a's windows up while you open 5b's.
 
 Report the results of both builds.
