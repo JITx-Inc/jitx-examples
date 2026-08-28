@@ -1,3 +1,5 @@
+<!-- Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3) · rev 1.1 · 2026-08-27 -->
+
 # Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3)
 
 Human-facing companion to the **Versal-FPGA-from-Pin-File Runbook**. Read it to understand what
@@ -72,7 +74,7 @@ precision resistor each — the circuit wrapper exposes them as pass-through por
 
 - Generator reconciliation: parsed rows = file footer = **1369**, unique balls, full grid; the
   committed module regenerates **byte-identically** (`--check`).
-- 17 tests + 74 subtests pass offline on the public jitx 4.2.2 line, including ~10 hand-read
+- 17 tests + 74 subtests pass offline on the jitx 4.4 line, including ~10 hand-read
   ball spot-checks spanning the grid corners and every bank type, symbol coverage (every port in
   exactly one box), and mapping bijectivity. Both non-test designs `jitx build` with `status: ok`.
 - Every one of the 1369 balls was **independently re-checked against the AMD file** by a

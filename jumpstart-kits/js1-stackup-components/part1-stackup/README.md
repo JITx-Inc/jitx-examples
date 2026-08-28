@@ -1,7 +1,7 @@
 # JS1 Part 1 — Stackup
 
 **Shortcut:** {download}`Download the runbook <JS1_Part1_Stackup-from-Fab-CSV_Runbook.md>`, hand it
-to your AI coding agent along with [the supplied fab CSV](JS1_Part1_Fab-Stackup_RevB.csv), and tell
+to your AI coding agent along with [the supplied fab CSV](JS1_Part1_Fab-Stackup.csv), and tell
 it to follow the file. Two `[HUMAN]` gates stop for you. Assumes [JS0](../../js0-setup/) is done.
 
 Build a 20-layer HDI substrate from the fab's stackup report by driving `jitx-substrate-modeler`.
@@ -46,7 +46,7 @@ runbook to read. To save the raw markdown instead — the form you hand to an ag
 
 ## The supplied input
 
-[JS1_Part1_Fab-Stackup_RevB.csv](JS1_Part1_Fab-Stackup_RevB.csv) is the ground truth this part is
+[JS1_Part1_Fab-Stackup.csv](JS1_Part1_Fab-Stackup.csv) is the ground truth this part is
 built and verified against — hand it to the agent alongside the runbook.
 
 It is a synthetic impedance-controlled stackup report, sectioned so it parses with Python's `csv`

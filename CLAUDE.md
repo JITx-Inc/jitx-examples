@@ -24,14 +24,19 @@ specifically about working *with an agent* in this repo.
   context, so instantiating a `SampleDesign` works offline. Only `jitx build` / `jitx ui` need
   `jitx runtime start`; `jitx build --dry <target>` translates a design without one.
 
-- **The `jitx` version you get locally may not be the one CI uses.** Every constraint in
-  `pyproject.toml` is satisfiable from public PyPI with stable versions (jitx 4.2.2 today), which is
-  what CI's pip resolves. A uv-backed `hatch` env with `PIP_EXTRA_INDEX_URL` pointing at the internal
-  index pulls pre-releases instead (4.3/4.4), and the two lines differ in API — `PairPoint.pair`
-  versus `PairPoint.front`/`.back`, for one. `tests/test_bga_optimization_demo.py` is import-only
-  for exactly this reason. Before concluding that demo code is broken, check which `jitx` you
-  resolved, and note that `jitx build` also needs the runtime (`~/.jitx/current`) on the same line as
-  the library.
+- **A set of changes is parked until public JITX 4.4.x ships, and the list is
+  `internal/JITX-4.4-RELEASE-ACTIONS.md`.** Read it before planning work here: it says how to tell
+  4.4.x has actually landed on *both* surfaces (Python package and runtime), what to change when it
+  does, what is already done so you don't redo it, and one item whose trigger has **already** fired.
+
+- **The repo targets the jitx 4.4 line, which public PyPI does not serve yet.** `pyproject.toml`
+  requires `jitx>=4.4.0rc4`, today resolvable only from the internal index (a uv-backed `hatch` env
+  with `PIP_EXTRA_INDEX_URL` set). Public PyPI still tops out at 4.2.2, so CI that installs from
+  public PyPI fails until 4.4.x is publicly released — expected; the repo publishes to
+  jitx-examples only on that release, at which point the constraint should be revisited (a final
+  `>=4.4.0` drops the pre-release specifier). Before concluding that demo code is broken, check
+  which `jitx` you resolved, and note that `jitx build` also needs the runtime (`~/.jitx/current`)
+  on the same line as the library.
 
 - **The parts database is mocked in tests.** `tests/conftest.py` installs an autouse fixture
   patching `jitxlib.parts.query_api.dbquery` with fixtures from `captured_json/` and sets

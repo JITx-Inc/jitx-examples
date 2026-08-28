@@ -1,8 +1,11 @@
 <!--
-JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3)
+JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.1 · 2026-08-27
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first — this runbook assumes
 an authenticated jitx CLI and the JITX skills are already enabled.
+START A NEW AGENT SESSION before you begin. JS0 installs the JITX skills, and a skills install
+only takes effect in a session started after it — so the session that finished JS0 cannot run
+this runbook, whose every step drives a skill.
 -->
 
 # JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3)
@@ -17,14 +20,19 @@ packaging manual) is the only ground truth for package geometry. Estimate nothin
 the steps **in order**; nothing is done until it passes its checks and `jitx build <non-test design target>`. Where a step
 is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
-> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI on 4.2.2+,
-> `jitx-skills` enabled in your agent) and network access to amd.com. Reference solution: the
-> `jitxexamples` package, module `jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga`.
+> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI on 4.4.0+,
+> `jitx-skills` enabled in your agent) and network access to amd.com. Reference solution:
+> `pip install jitxexamples`, then the module
+> `jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga` — also readable on
+> [GitHub](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/versal_fpga).
+> Note the scaffold seeds a *different* package, `jitxexamples-components`, which shares the
+> `jitxexamples` namespace, so `import jitxexamples` succeeds without this one installed and only
+> the `jumpstart_kits` import fails.
 > Expect roughly 2–3 hours end to end, most of it agent-autonomous.
 
 **Assumptions / prerequisites**
 
-- JS0 is complete: `jitx --version` is 4.2.2 or newer (pre-releases count) and `jitx auth show`
+- JS0 is complete: `jitx --version` is 4.4.0 or newer (pre-releases count) and `jitx auth show`
   confirms authentication. The `jitx` library your project resolves should sit on the same release
   line as the CLI — if pip lands a different line, say so rather than silently proceeding.
 - Python 3.12+ and `git` are available; the agent can run shell commands and fetch files from AMD.
@@ -96,7 +104,7 @@ and port-storage mistakes that happy-path tests miss.
 ## Steps
 
 **0 · Preflight.**
-Run `jitx --version` (expect **4.2.2+**) and `jitx auth show` (expect **`Authorized: yes`**). Confirm the JITX skills are invocable — **invoke the base
+Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. Then run `jitx --version` (expect **4.4.0+**) and `jitx auth show` (expect **`Authorized: yes`**). Confirm the JITX skills are invocable — **invoke the base
 `jitx` skill first**, since it owns environment and runtime setup, then the two this task drives: the
 **component modeler**, and for step 11 the **circuit builder**:
 
@@ -138,9 +146,9 @@ Build the seeded non-test target from `jitx find` — ignore any target whose mo
 the seeded design class after the project directory, lowercased with hyphens and spaces turned into
 underscores, so a directory called `js1-versal-fpga` builds as
 `jitx build js1_versal_fpga.main.js1_versal_fpga`. This smoke test must succeed before you write any
-code of your own. If it fails, stop and tell me. Then prepare the project: create `tests/`; add
-`pytest` and `pyright` as dev dependencies if the scaffold didn't seed them; ensure `.context/` and
-`designs/` are gitignored; `git init` + initial commit.
+code of your own. If it fails, stop and tell me. Then prepare the project: create `tests/`, add
+`pytest` and `pyright` as dev dependencies, and `git init` if you want version control. Leave the
+seeded `.gitignore` as it is.
 
 **Run `pyright` inside this venv, every time.** The "pyright clean" gate in steps 9 and 12 means
 clean *here*. Run it against any other interpreter and it reports every JITX import as unresolved —
@@ -242,7 +250,9 @@ via `SchematicGroup`.
 **9 · Verify the component.**
 Write the tests per the skill's **"Testing a generated component"**, with this task's literals: 1369
 ports == assignments == pads, the per-rail counts from your step-4 inventory, ~10 hand-read spot
-checks spanning `A1`, `AU37`, a double-letter row and one pin per bank type. Then: `pyright` →
+checks spanning `A1`, `AU37`, a double-letter row and one pin per bank type. Follow that section's
+cached-instantiation requirement rather than one build per assertion — at this pin count it is the
+difference between a suite of seconds and one that times out. Then: `pyright` →
 `pytest` → `jitx build <non-test symbol-viewer design target>` (expect `status: ok`) → run the
 `jitx-code-review` skill and fix findings. Commit when green.
 
@@ -274,6 +284,9 @@ rules. Where this part instantiates them:
   of the six quads have none.
 - **The `_L` / `_RS` group tags come from the bank diagram**, not the pin file — including which
   groups have no bonded quad in this package.
+
+Tie rail balls on per the circuit-builder skill's rail-list rule — ~940 of them pass through here, so
+the sequence form is the first thing you will reach for and the first thing that breaks.
 
 And name the boundary rail ports distinctly from the net names (`pwr_vccint`, not `VCCINT`) — a
 named net colliding with a public port name fails only in the full runtime build ("Public name

@@ -1,19 +1,22 @@
 <!--
-JITX Parametric Component Families Runbook (JS1 · Part 2)
+JITX Parametric Component Families Runbook (JS1 · Part 2) · rev 1.1 · 2026-08-27
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first — this runbook assumes
 an authenticated jitx CLI and the JITX skills are already enabled.
+START A NEW AGENT SESSION before you begin. JS0 installs the JITX skills, and a skills install
+only takes effect in a session started after it — so the session that finished JS0 cannot run
+this runbook, whose every step drives a skill.
 -->
 
 # JITX Parametric Component Families Runbook (JS1 · Part 2)
 
 **Goal (for the agent):** In a fresh JITX Python project, build four **parameterized, datasheet-driven component families** — three SMD chip-resistor families (**Yageo RC_L**, **Panasonic ERJ**, **Vishay CRCW**) and one MLCC capacitor family (**Samsung Electro-Mechanics CL**). Each family is a single `jitx.Component` class that stands in for the manufacturer's whole catalog family, with **no parts database or online query** — the class *is* the data. Follow the steps **in order**; a family is not done until it passes its tests and `jitx build <non-test design target>`. Where a step is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
-> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI on 4.2.2+, `jitx-skills` enabled in your agent) and network access to the manufacturer datasheet URLs in step 2.
+> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI on 4.4.0+, `jitx-skills` enabled in your agent) and network access to the manufacturer datasheet URLs in step 2.
 
 **Assumptions / prerequisites**
 
-- JS0 is complete: `jitx --version` is 4.2.2 or newer and `jitx auth show` confirms authentication.
+- JS0 is complete: `jitx --version` is 4.4.0 or newer and `jitx auth show` confirms authentication.
 - Python 3.12+ and `git` are available; the agent can run shell commands and fetch PDFs.
 - `pip install pymupdf` is available for datasheet page extraction (the component-modeler skill uses it).
 
@@ -85,7 +88,7 @@ value-encoder carry bugs that happy-path tests missed.
 ## Steps
 
 **0 · Preflight.**
-Run `jitx --version` (expect **4.2.2+**) and `jitx auth show` (expect authenticated). Confirm the JITX skills are invocable in this session — the one this task drives is the **component modeler**:
+Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. Then run `jitx --version` (expect **4.4.0+**) and `jitx auth show` (expect authenticated). Confirm the JITX skills are invocable in this session — the one this task drives is the **component modeler**:
 
 - **Claude Code** — the `jitx-skills` plugin is installed; invoke with `/jitx-skills:jitx-component-modeler`.
 - **Codex / GPT** — invoke with `$jitx-component-modeler <request>`. Name the sub-skill rather than relying on `$jitx` to route to it.
@@ -111,7 +114,7 @@ jitx runtime start --background
 jitx find
 ```
 
-Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the scaffold names the seeded design class after the project directory, lowercased with hyphens and spaces turned into underscores, so a directory called `js1-passives` builds as `jitx build js1_passives.main.js1_passives`. This smoke test must succeed before you write any component code. If it fails, stop and tell me. Then prepare the project for this task: create a `tests/` directory; add `pytest` and `pyright` as dev dependencies if the scaffold didn't seed them; ensure `.context/` is gitignored; `git init` + initial commit if the scaffold didn't.
+Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the scaffold names the seeded design class after the project directory, lowercased with hyphens and spaces turned into underscores, so a directory called `js1-passives` builds as `jitx build js1_passives.main.js1_passives`. This smoke test must succeed before you write any component code. If it fails, stop and tell me. Then prepare the project for this task: create a `tests/` directory, add `pytest` and `pyright` as dev dependencies, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
 
 **2 · Fetch the datasheets.**
 Download all four manufacturer datasheets into `.context/` (gitignored — **link the URL in each family's docstring, never commit the PDF**):
@@ -136,7 +139,7 @@ Build `panasonic_erj.py` from the Panasonic datasheet: 3-digit EIA value code (`
 Build `vishay_crcw.py` on the shared helpers: fixed 4-character RKM value code (`10K0`). This datasheet specifies its cases by standard EIA/IEC size code (`RR1608M` = 1.6 × 0.8 mm for 0603), so prefer the generator's standard chip dimensions — and doc 20035 **p. 11** (`DIMENSIONS AND MASS`) tabulates them too, so the skill's **"Taking the standard table's dimensions is a verification obligation"** applies in full: read p. 11 and assert the table against it per size. Write `tests/test_vishay_crcw.py`, cross-checking **`CRCW0603562RFKEA`**. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
 
 **7 · Family 4 — Samsung CL (MLCC).**
-Build `samsung_cl.py` — the same pattern with two new axes, **dielectric** (C0G/NP0, X7R, X5R as offered per size/voltage) and **rated voltage**, a 3-digit pF value code, `CapacitorSymbol`, and `reference_designator_prefix = "C"`. Cross-check against the real catalog part **`CL10B104KB8NNNC`**. The linked catalog is the overview edition and may publish no per-size capacitance lineup — the skill's **"When the catalog does not publish what you need, say so"** covers that case; don't invent ranges. The shared file now serves a non-resistor part, so rename `chip_resistor.py` → `chip_smt.py`, update all imports, and re-run the **full** suite. Write `tests/test_samsung_cl.py`. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
+Build `samsung_cl.py` — the same pattern with two new axes, **dielectric** (C0G/NP0, X7R, X5R as offered per size/voltage) and **rated voltage**, a 3-digit pF value code, `CapacitorSymbol`, and `reference_designator_prefix = "C"`. Cross-check against the real catalog part **`CL10B104KB8NNNC`**. The linked catalog is the overview edition and hits **both** gaps in the skill's **"When the catalog does not publish what you need, say so"** — no per-size capacitance lineup, and no chip outline table either. Work it per that section, and expect one size to fall out of coverage; tell me which and why. The shared file now serves a non-resistor part, so rename `chip_resistor.py` → `chip_smt.py`, update all imports, and re-run the **full** suite. Write `tests/test_samsung_cl.py`. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
 
 **8 · Full verification pass.**
 Create a small combined `SampleDesign` that instantiates one part from **each of the four families** and confirm `jitx build <non-test design target>` passes on it. Run `pyright` and the full `pytest` suite, plus the project's lint/format check if the scaffold seeded one. Then run the **`jitx-code-review`** self-critique skill over the four family files and the shared helpers, fix what it finds, re-run the tests, and commit. Report the results of all checks to me.

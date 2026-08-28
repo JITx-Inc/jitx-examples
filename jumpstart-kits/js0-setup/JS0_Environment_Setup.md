@@ -105,9 +105,11 @@ claude plugin marketplace add JITx-Inc/jitx-skills
 claude plugin install jitx-skills@jitx
 ```
 
-`claude` is typically not on `PATH` in the extension's shell. The extension ships its own binary at
-`~/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude` (Cursor:
-`~/.cursor/extensions/…`) — put that directory on `PATH`, or invoke the binary by full path.
+`claude` is typically not on `PATH` in the extension's shell. The extension ships its own binary in
+the engineer's home, at `~<engineer-login>/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude`
+(Cursor: `~<engineer-login>/.cursor/extensions/…`) — put that directory on `PATH`, or invoke the
+binary by full path. Name the login rather than writing a bare `~`, which resolves elsewhere for an
+agent running under its own OS account.
 
 Skills are namespaced under the plugin name — invoke the base workflow with `/jitx-skills:jitx`.
 
@@ -240,10 +242,11 @@ to `@jitx <request to AI>` for general work). For example:
 ## Appendix A — Python dependencies
 
 Creating a project installs the packages below into the project virtual environment. The JS kits
-require **JITX 4.2.2 or newer** — a minimum JITX sets for these kits, not one derived from the table
-below. The table is an **illustrative snapshot** and **will change between releases**; regenerate it
-for the version you are deploying with `pip list` in the project venv. Confirm the current supported
-minimum with your JITX contact rather than relying on this document's number.
+require **JITX 4.4.0 or newer** — a minimum JITX sets for these kits, not one derived from the table
+below. The floor above is the number that matters. The table is only an **illustrative snapshot of
+the shape of the dependency set** — it was taken on an earlier release and its versions are **not**
+the floor; regenerate it for the version you are deploying with `pip list` in the project venv.
+Confirm the current supported minimum with your JITX contact rather than relying on this document.
 
 > Note: the JITX runtime version and the Python package versions do not track one-to-one — the
 > `jitx` and `jitxcore` packages report their own version numbers. Expect them to differ from the

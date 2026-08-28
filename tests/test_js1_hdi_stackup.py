@@ -44,7 +44,7 @@ from jitxexamples.jumpstart_kits.js1_stackup_components.hdi_stackup.main import 
     HDIStackupDesign,
 )
 
-CSV_NAME = "JS1_Part1_Fab-Stackup_RevB.csv"
+CSV_NAME = "JS1_Part1_Fab-Stackup.csv"
 N_COPPER = 20
 
 _SIDE_TOP = 0

@@ -6,8 +6,9 @@ that owns the lane-local geometric features: signal-via antipad
 ``KeepOut`` list, deskew ``OverlappableCopper`` pair, and the deskew-
 antipad ``KeepOut``. Every cross-lane JITX object — diff-pair ``Net``,
 signal-via and pair/insertion-control ``PortAttachment``s,
-``PairPoint`` / ``PairInsertion`` / ``Route`` triple, and the
-upper-reference and deskew fence ``Pour``s — is constructed and owned
+``PairPoint`` / ``PairInsertion`` / ``Route`` triple, the deskew-copper
+``VirtualConnection``s, and the upper-reference and deskew fence
+``Pour``s — is constructed and owned
 by ``BGALink``, since JITX requires each ``Net`` / ``PortAttachment`` /
 ``Pour`` to live on the common ancestor of every ``Port`` it touches
 and the BGA Component sits at ``BGALink`` level. The diff pairs carry
@@ -36,6 +37,7 @@ from jitx.sample import SampleDesign
 from jitx.shapes.composites import rectangle
 from jitx.shapes.shapely import ShapelyGeometry
 from jitx.via import Via
+from jitx.virtual import VirtualConnection
 from . import generic_bga as bga
 from .constraints import StriplineDiffPairTag
 from .deskew import deskew_pair
@@ -235,7 +237,8 @@ class BGALink(Circuit):
         # whose structural ancestry requires them to live here.
         # ``EscapeLane`` children own the lane-local geometry and
         # control points; this loop also emits the diff-pair Nets, signal
-        # Vias, PortAttachments, and fence Pours — each accumulated into
+        # Vias, PortAttachments, deskew-copper VirtualConnections, and
+        # fence Pours — each accumulated into
         # a named list member of this Circuit (the JITX objects
         # themselves, not records of them).
         self.lanes: list[EscapeLane] = []
@@ -245,6 +248,7 @@ class BGALink(Circuit):
         pair_points: list[PairPoint] = []
         pair_insertions: list[PairInsertion] = []
         control_attachments: list[PortAttachment] = []
+        virtual_connections: list[VirtualConnection] = []
         routes: list[Route] = []
         signal_via_fence_pours: list[Pour] = []
         deskew_fence_pours: list[Pour] = []
@@ -288,7 +292,9 @@ class BGALink(Circuit):
                 # coupled stripline trunk; insertion-control sits at the
                 # board-edge wave-port launch. Both anchor to the BGA pair
                 # itself, so the Route walks coupled diff-pair to
-                # uncoupled board-edge launch on the deskew layer.
+                # uncoupled board-edge launch on the deskew layer. Both
+                # control points are non-inverted, so the insertion's
+                # coupled end pairs with the pair point's back side.
                 pair_point = (
                     0.5 * (lane.deskew_left_exit[0] + lane.deskew_right_exit[0]),
                     0.5 * (lane.deskew_left_exit[1] + lane.deskew_right_exit[1]),
@@ -312,9 +318,32 @@ class BGALink(Circuit):
                 )
                 routes.append(
                     Route(
-                        pair_point.pair,
+                        pair_point.back,
                         pair_insertion.coupled,
                         spec.deskew_layer,
+                    )
+                )
+
+                # The deskew arcs are OverlappableCopper the router cannot
+                # see; declare the connection each one makes — signal via to
+                # front-side pair-point leg — so no flywires are emitted.
+                # The [n, p] attachment order above puts tx_pair.n on the
+                # point's p side, so the left (n) copper lands on front.p
+                # and the right (p) copper on front.n.
+                virtual_connections.append(
+                    VirtualConnection(
+                        n_via,
+                        pair_point.front.p,
+                        source_layer=spec.deskew_layer,
+                        destination_layer=spec.deskew_layer,
+                    )
+                )
+                virtual_connections.append(
+                    VirtualConnection(
+                        p_via,
+                        pair_point.front.n,
+                        source_layer=spec.deskew_layer,
+                        destination_layer=spec.deskew_layer,
                     )
                 )
 
@@ -346,6 +375,7 @@ class BGALink(Circuit):
         self.pair_points = pair_points
         self.pair_insertions = pair_insertions
         self.control_attachments = control_attachments
+        self.virtual_connections = virtual_connections
         self.routes = routes
         self.signal_via_fence_pours = signal_via_fence_pours
         self.deskew_fence_pours = deskew_fence_pours

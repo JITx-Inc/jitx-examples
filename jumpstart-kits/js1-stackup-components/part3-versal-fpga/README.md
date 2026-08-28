@@ -37,7 +37,7 @@ add `GTMQuad` (4 lanes + 2 refclks) and `XCVP1002Circuit`: 31 `Power` rails, thr
 (GND / GND_SMON / GND_SENSE), and six GTM quad bundles wired through the generated pin groupings.
 
 **How we know it's right.** Reconciliation runs before any code: parsed rows = file footer = 1,369,
-unique balls, full 37×37 grid. Then 17 tests and 74 subtests on public jitx 4.2.2 — hand-read ball
+unique balls, full 37×37 grid. Then 17 tests and 74 subtests on jitx 4.4 — hand-read ball
 spot-checks across grid corners and every bank type, symbol coverage, mapping bijectivity, circuit
 rail roster. Both designs, the component viewer and the wrapped circuit, build `status: ok` against
 the runtime. An independent 13-agent review re-checked all 1,369 balls against the AMD file with

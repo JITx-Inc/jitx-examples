@@ -13,9 +13,9 @@ build-backend = "hatchling.build"
 name = "jitxexamples"
 dynamic = ["version"]
 dependencies = [
-  "jitx>=4.2.0",
-  "jitxlib-standard>=4.2.0",
-  "jitxlib-parts>=1.2.0,<2",
+  "jitx>=4.4.0,<5",
+  "jitxlib-standard>=4.4.0,<5",
+  "jitxlib-parts>=1.3.0,<2",
   "jitxlib-voltage-divider>=1.0.0,<2",
   "eseries",
   "pytest",

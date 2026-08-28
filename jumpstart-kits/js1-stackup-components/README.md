@@ -4,9 +4,14 @@
 it to follow the file:
 
 - {download}`Part 1 · Stackup <part1-stackup/JS1_Part1_Stackup-from-Fab-CSV_Runbook.md>` — hand it
-  [the supplied fab CSV](part1-stackup/JS1_Part1_Fab-Stackup_RevB.csv) as well
+  [the supplied fab CSV](part1-stackup/JS1_Part1_Fab-Stackup.csv) as well
 - {download}`Part 2 · Parametric passives <part2-parametric-passives/JS1_Part2_Parametric-Passives_Runbook.md>`
 - {download}`Part 3 · Versal FPGA <part3-versal-fpga/JS1_Part3_Versal-FPGA-from-Pin-File_Runbook.md>`
+
+**Start a new agent session before you begin any part.** JS0 installs the JITX skills, and a skills
+install only takes effect in a session started after it — so the session that finished JS0 cannot run
+a JS1 runbook, whose every step drives a skill. Nothing on disk changes; the session boundary is the
+whole of it.
 
 Each part is self-contained and stops at the `[HUMAN]` steps that need you, but all of them assume
 [JS0](../js0-setup/) is done. Everything below is the context around each part.
