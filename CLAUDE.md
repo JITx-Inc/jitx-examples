@@ -24,24 +24,21 @@ specifically about working *with an agent* in this repo.
   context, so instantiating a `SampleDesign` works offline. Only `jitx build` / `jitx ui` need
   `jitx runtime start`; `jitx build --dry <target>` translates a design without one.
 
-- **The repo targets the jitx 4.4 line, and public PyPI serves it.** `pyproject.toml` requires
-  `jitx>=4.4.0,<5`. Two surfaces have to agree — a 4.4 package against a 4.2 runtime is not a
-  working install — so `jitx build` also needs the runtime (`~/.jitx/current`, check with
-  `jitx runtime introspect`) on the same line as the library. Before concluding demo code is broken,
-  check which `jitx` you actually resolved on both.
+- **JITX 4.4.0 is public, and the parked-changes list is `internal/JITX-4.4-RELEASE-ACTIONS.md`.**
+  Read it before planning work here: it says what is already done so you don't redo it, and what is
+  still open. Two items were still open as of 2026-08-31 — deleting
+  `vishay_crcw._STANDARD_TABLE_OVERRIDES` (its trigger fired long ago) and regenerating
+  `JS0_Environment_Setup.md` Appendix A, whose dependency table is still a 4.2-line snapshot. The
+  file's runtime-surface check (`jitx runtime introspect` reporting a 4.4.x `release` build) had not
+  been run at that point either.
 
-- **A maintainer machine does not resolve what a customer resolves.** Developer setups here carry an
-  internal index and a pre-release opt-in, and they are not all environment variables —
-  `~/.pip/pip.conf` can set `extra-index-url` and `pre = true`, which `env -u PIP_EXTRA_INDEX_URL`
-  does not strip. To reproduce a customer's resolution, neutralise the config file as well:
-
-  ```bash
-  env -u PIP_PRE -u PIP_EXTRA_INDEX_URL -u UV_PRERELEASE -u UV_EXTRA_INDEX_URL \
-    PIP_CONFIG_FILE=/dev/null hatch test --cover
-  ```
-
-  Confirm what you got (`pip list | grep jitx`) rather than assuming: a `.dev`, `a` or `rc` suffix
-  means the isolation did not hold. Without it the `hatch` envs resolve *ahead* of the public line.
+- **The repo targets the jitx 4.4 line, and public PyPI now serves it.** `pyproject.toml` requires
+  `jitx>=4.4.0,<5`, which resolves from public PyPI — the pre-release specifier and the
+  CI-can't-install caveat are both gone. The `hatch` envs still add the internal index
+  (`PIP_EXTRA_INDEX_URL`), so they resolve *ahead* of the public line: expect a `4.4.x.devN` build
+  there rather than 4.4.0 exactly. Before concluding that demo code is broken, check which `jitx`
+  you resolved, and note that `jitx build` also needs the runtime (`~/.jitx/current`) on the same
+  line as the library.
 
 - **The parts database is mocked in tests.** `tests/conftest.py` installs an autouse fixture
   patching `jitxlib.parts.query_api.dbquery` with fixtures from `captured_json/` and sets
