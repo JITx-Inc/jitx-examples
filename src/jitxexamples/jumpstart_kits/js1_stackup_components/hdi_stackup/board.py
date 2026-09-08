@@ -123,7 +123,7 @@ that don't bear on this file's own choices.
    mapping``. The mapping form accepts ``None`` values at construction time,
    but they are **translation-fatal**: ``jitx._translate.routing`` assigns
    ``desired_width`` into a protobuf float with no ``None`` guard (verified on
-   4.2.2 and 4.4.0rc2). The failure is latent in this kit because routing
+   4.2.2 and 4.4.0). The failure is latent in this kit because routing
    structures only translate when a net, topology or rule applies them, and
    ``main.py``'s smoke design has an empty circuit — it would surface in the
    first consumer design that uses one. So this file carries the planes with

@@ -1,21 +1,19 @@
 <!--
-JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.1 · 2026-08-27
+JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.3 · 2026-08-31
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 together with your stackup CSV, and tell the agent to follow it. Complete the JS0 Setup Runbook
-first — this runbook assumes an authenticated jitx CLI and the JITX skills are already enabled.
-START A NEW AGENT SESSION before you begin. A skills install only takes effect in a session
-started after it, so the session that finished JS0 cannot run this runbook.
+first. START A NEW AGENT SESSION before you begin — a skills install only takes effect in a
+session started after it, so the session that finished JS0 cannot run this runbook.
 -->
 
 # JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1)
 
 **Goal (for the agent):** Turn a fabrication house's stackup report into a verified JITX substrate in a file called `board.py` — a 20-layer HDI stack, five microvia levels per side, impedance-controlled routing structures. The user-provided documentation (e.g. CSV) is the **only** ground truth: every material, thickness, via and trace width must trace to one of its rows. Estimate nothing: if the CSV doesn't state it and the substrate-modeler skill doesn't supply a labeled default for it, ask me. Follow the steps **in order**. Where a step is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
-> **For humans:** you need a completed **JS0** (authenticated `jitx` CLI on 4.4.0+, `jitx-skills` enabled) and a stackup CSV — `part1-stackup/JS1_Part1_Fab-Stackup.csv` from this kit, or your own fab's export. Reference solution: `pip install jitxexamples`, then [`jitxexamples.jumpstart_kits.js1_stackup_components.hdi_stackup`](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/hdi_stackup) — a bare `import jitxexamples` succeeds without it, so check the full path.
+> **For humans:** you need a completed **JS0** (authenticated `jitx` CLI, `jitx-skills` enabled) and a stackup CSV — `part1-stackup/JS1_Part1_Fab-Stackup.csv` from this kit, or your own fab's export. Reference solution: `pip install jitxexamples`, then [`jitxexamples.jumpstart_kits.js1_stackup_components.hdi_stackup`](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/hdi_stackup).
 
 **Assumptions / prerequisites**
 
-- JS0 is complete: `jitx --version` is 4.4.0 or newer and `jitx auth show` confirms authentication.
 - Python 3.12+ and `git` are available; the agent can run shell commands.
 - The stackup CSV is in the project directory, or pasted into this session.
 
@@ -24,13 +22,7 @@ started after it, so the session that finished JS0 cannot run this runbook.
 ## Steps
 
 **0 · Preflight.**
-Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. Then run `jitx --version` (expect **4.4.0+**) and `jitx auth show` (expect authenticated). Confirm the JITX skills are invocable — the one this task drives is the **substrate modeler**:
-
-- **Claude Code** — the `jitx-skills` plugin is installed; invoke with `/jitx-skills:jitx-substrate-modeler`.
-- **Codex / GPT** — invoke with `$jitx-substrate-modeler <request>`. Name the sub-skill rather than relying on `$jitx` to route to it.
-- **Devin** — invoke with `@jitx-substrate-modeler <request>`.
-
-If any check fails, **stop** and tell me to re-run the JS0 Setup Runbook first.
+Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. This task drives the **substrate modeler** skill — confirm it is invocable before you start.
 
 **1 · Scaffold a project.**
 Run `jitx project layout init`, then set up the project environment inside it:
@@ -50,7 +42,7 @@ jitx runtime start --background
 jitx find
 ```
 
-Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`.** The scaffold names the seeded design class after the project directory, lowercased with hyphens and spaces turned into underscores, so a directory called `js1-hdi-stackup` builds as `jitx build js1_hdi_stackup.main.js1_hdi_stackup`. This smoke test must succeed before you write any code of your own. If it fails, stop and tell me; do not start on the stackup. Then create `tests/`, add `pytest` and `pyright`, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
+Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`.** The two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `js1-hdi-stackup` builds as `jitx build js1_hdi_stackup.main.Js1HdiStackup`. This smoke test must succeed before you write any code of your own. If it fails, stop and tell me; do not start on the stackup. Then create `tests/`, add `pytest` and `pyright`, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
 
 **2 · Read the report before writing any code.**
 Parse the CSV and **restate it back to me** per the skill's Source Documents rules; flag whatever is ambiguous.

@@ -1,5 +1,5 @@
 <!--
-JITX Setup Runbook (JS0) · rev 1.2 · 2026-08-28
+JITX Setup Runbook (JS0) · rev 1.4 · 2026-08-31
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it.
 -->
@@ -30,7 +30,7 @@ and tell the agent to follow it.
 Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. Then run `python3 --version` (must be 3.12 or newer) and `git --version`. Also check `uv --version` (optional). If Python is older than 3.12, **stop** and tell me how to install 3.12+ for my OS.
 
 **1 · Install the JITX CLI** — the global bootstrap: it authenticates you and scaffolds projects.
-Run `pip install jitx`. If it fails with the PEP 668 "externally-managed-environment" error — the Python packaging rule that stops `pip` writing into a system-managed interpreter — **stop and ask me whether it's ok to use uv instead**. If I say yes, install `uv` if it's missing (https://astral.sh/uv) and run `uv tool install jitx`. Verify with `jitx --version` (expect **4.4.0 or newer**) and tell me the version.
+Run `pip install jitx`. If it fails with the PEP 668 "externally-managed-environment" error — the Python packaging rule that stops `pip` writing into a system-managed interpreter — **stop and ask me whether it's ok to use uv instead**. If I say yes, install `uv` if it's missing (https://astral.sh/uv) and run `uv tool install jitx`. Verify with `jitx --version` and tell me the version.
 
 **2 · Install the runtime.**
 Run `jitx runtime install`. Do this **before** signing in — `jitx auth login` needs the runtime present to work. **On Windows** this opens an MSI installer in a **separate popup window** (possibly behind others): stop and tell me to complete it — the command won't return until I do.
@@ -45,6 +45,8 @@ Run `jitx auth login 2>&1`. It prints an activation link and a code; I open the 
 If you still get no link, run it under a pty as a fallback — `script -q /dev/null jitx auth login` (macOS) or `script -qec "jitx auth login" /dev/null` (Linux) — which merges the two streams for you. If that shows nothing either, report the failure rather than retrying.
 
 **Stop once the link is showing and let me finish the sign-in myself** — do **not** guess or enter my credentials. After I confirm, run `jitx auth show` to verify, then continue.
+
+**`Authorized: yes` is the field that decides it** — read that line, not the `Expires` one. An `Expires` timestamp in the past is normal; in fact expect one. `jitx auth show` parses the license file's claims *before* it asks the launcher whether I'm authorized, and that check is what silently regenerates the access token from the on-disk refresh token — so the `Expires` it prints is always the pre-refresh value. Run the command a second time and you'll see the new one. Don't stop on a stale expiry and don't report it as a problem. Only `Authorized: no` is a stop, and the fix is `jitx auth refresh`, or `jitx auth login` again if that fails.
 
 **4 · Enable the JITX skills.**
 Enable the skills for whichever runtime you are:
@@ -86,15 +88,19 @@ jitx runtime start --background
 jitx find
 ```
 
-- **5a — Simplest build.** Run `jitx project layout init` to create a new JITX project seeded with a two-resistor sample design (Devin users: you made this project in step 4). Then run the setup commands above and build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the scaffold names the seeded design class after the project directory, lowercased with hyphens and spaces turned into underscores, so a directory called `my-first-board` builds as `jitx build my_first_board.main.my_first_board`. Then show me the schematic and board views.
+- **5a — Simplest build.** Run `jitx project layout init` to create a new JITX project seeded with a two-resistor sample design (Devin users: you made this project in step 4). Then run the setup commands above and build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `my-first-board` builds as `jitx build my_first_board.main.MyFirstBoard`. Then show me the schematic and board views.
 - **5b — Full build.** Clone `https://github.com/JITx-Inc/jitx-examples`, run the setup commands above, and **take the `si_bga_optimization` target verbatim from `jitx find`** — the same rule as 5a, so a repo reorganisation can't strand you on a stale module path. Expect `jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design`. Build it, confirm it builds, and display the board UI windows for me.
 
 > **If a build fails with "You are not authenticated. Please sign in through the JITX Sidebar in VSCode"**, that means step 3 didn't complete — re-run `jitx auth login`, don't go looking for VSCode. `jitx runtime start --background` succeeds while unauthenticated, so a green step 2 is not proof of sign-in, and the real one-line cause arrives underneath two Python tracebacks.
 
 > **Opening the views — what to expect.**
 >
-> - **The first window may be slow.** The very first board or schematic view in 5a can take a few minutes to appear — more likely on macOS. If it doesn't come up straight away, wait for it and tell me it's coming — do **not** re-run the command or report it broken. If nothing has appeared after **5 minutes**, tell me. Any later view, 5b's included, comes up faster.
 > - **`jitx ui open` blocks while its window is open**, so launch it in the background rather than letting it hang your shell for the whole session. Later calls return immediately and add their windows to the JITX app already running — there's no limit on how many views can be open at once, so leave 5a's windows up while you open 5b's.
+> - **Check the job is still alive before you wait on it.** Give it about 10 seconds, then confirm the backgrounded `jitx ui open` hasn't already exited. A command that has returned did **not** open a window, and waiting longer will not change that — the note below does not apply to it.
+> - **The first window may be slow — if it's still running.** The very first board or schematic view in 5a can take a few minutes to appear — more likely on macOS. If it doesn't come up straight away, wait for it and tell me it's coming — do **not** re-run the command or report it broken. If nothing has appeared after **5 minutes**, tell me. Any later view, 5b's included, comes up faster.
+> - **[Linux] An immediate exit is usually one of two known causes.** Neither is fixable from the JITX CLI, which passes the viewer no flags and sets no environment — but it inherits your shell, so `export` the variable and re-run (put it in your shell profile if you want it to persist across sessions).
+>   - **Exit `251`** is the bundled Chromium's sandbox aborting. `jitx runtime install` runs unprivileged, so `chrome-sandbox` lands as an ordinary `0755` file you own rather than setuid-root; where the kernel *also* blocks unprivileged user namespaces — `kernel.apparmor_restrict_unprivileged_userns=1`, the default on Ubuntu 24.04 — there is no sandbox left to fall back to and it dies on startup. **`export ELECTRON_DISABLE_SANDBOX=1`** clears it, no `sudo` required.
+>   - **`Missing X server or $DISPLAY`** on a Wayland desktop (default GNOME/KDE, Sway, Hyprland, niri) — **`export ELECTRON_OZONE_PLATFORM_HINT=wayland`**. This one can still exit **0**, so a zero exit is not proof the window opened; go by whether the process is alive, not by the code.
 
 Report the results of both builds.
 
@@ -111,7 +117,7 @@ Now show me the design-as-code loop on the step-5 design. **Invite me to make a 
 
 ## Done when
 
-- `jitx --version` is 4.4.0 or newer and `jitx auth show` confirms I'm authenticated.
+- The `jitx` CLI is installed and `jitx auth show` reports `Authorized: yes`.
 - The JITX skills are visible **and invocable** in a new agent session, confirmed by actually invoking one.
 - **5a** (two-resistor template) builds, and so does **5b** (`si_bga_optimization`).
 - A prompted design change — the diff-pair edit on 5b, or a resistor value on 5a if 5b didn't build — is applied, rebuilt, and visible in both the code and the UI.

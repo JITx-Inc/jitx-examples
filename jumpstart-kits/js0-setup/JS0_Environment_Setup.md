@@ -242,11 +242,10 @@ to `@jitx <request to AI>` for general work). For example:
 ## Appendix A — Python dependencies
 
 Creating a project installs the packages below into the project virtual environment. The JS kits
-require **JITX 4.4.0 or newer** — a minimum JITX sets for these kits, not one derived from the table
-below. The floor above is the number that matters. The table is only an **illustrative snapshot of
-the shape of the dependency set** — it was taken on an earlier release and its versions are **not**
-the floor; regenerate it for the version you are deploying with `pip list` in the project venv.
-Confirm the current supported minimum with your JITX contact rather than relying on this document.
+require **JITX 4.4.0 or newer**. The table is an **illustrative snapshot of the shape of the
+dependency set**, captured from a freshly scaffolded project on **JITX 4.4.0 with Python 3.12** —
+the versions are **not** the floor and they move with each release, so regenerate it for the version
+you are deploying with `pip list` in the project venv.
 
 > Note: the JITX runtime version and the Python package versions do not track one-to-one — the
 > `jitx` and `jitxcore` packages report their own version numbers. Expect them to differ from the
@@ -256,44 +255,31 @@ Confirm the current supported minimum with your JITX contact rather than relying
 | --- | --- |
 | annotated-doc | 0.0.5 |
 | anyio | 4.14.2 |
-| black | 25.1.0 |
 | certifi | 2026.7.22 |
-| click | 8.4.2 |
-| dataclasses-json | 0.6.7 |
-| docopt | 0.6.2 |
-| docopt-subcommands | 4.0.0 |
-| eseries | 1.2.1 |
+| click | 8.5.0 |
 | flexcache | 0.3 |
 | flexparser | 0.4 |
-| future | 1.0.0 |
 | h11 | 0.16.0 |
 | httpcore | 1.0.9 |
 | httpx | 0.28.1 |
-| idna | 3.18 |
-| jitx | 4.2.2 |
-| jitxcore | 4.2.0 |
-| jitxexamples-components | 1.2.0 |
-| jitxlib-parts | 1.2.0 |
-| jitxlib-standard | 4.2.0 |
-| jitxlib-voltage-divider | 1.1.0 |
+| idna | 3.19 |
+| jitx | 4.4.0 |
+| jitxcore | 4.4.0 |
+| jitxlib-standard | 4.4.0 |
 | markdown-it-py | 4.2.0 |
-| marshmallow | 3.26.2 |
 | mdurl | 0.1.2 |
-| mypy_extensions | 1.1.0 |
-| numpy | 2.5.1 |
+| numpy | 2.5.2 |
 | packaging | 25.0 |
-| pathspec | 1.1.1 |
 | Pint | 0.24.4 |
-| pip | 26.1.2 |
-| platformdirs | 4.11.0 |
-| protobuf | 7.35.1 |
+| pip | 25.0.1 |
+| platformdirs | 4.11.5 |
+| protobuf | 7.36.1 |
 | psutil | 7.2.2 |
-| Pygments | 2.20.0 |
-| rich | 15.0.0 |
+| Pygments | 2.21.0 |
+| rich | 14.3.4 |
 | shapely | 2.1.2 |
 | shellingham | 1.5.4 |
 | typer | 0.25.1 |
-| typing-inspect | 0.9.0 |
 | typing_extensions | 4.16.0 |
 | websockets | 15.0.1 |
 

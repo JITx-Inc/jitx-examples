@@ -1,11 +1,10 @@
 <!--
-JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.1 · 2026-08-27
+JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.3 · 2026-08-31
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
-and tell the agent to follow it. Complete the JS0 Setup Runbook first — this runbook assumes
-an authenticated jitx CLI and the JITX skills are already enabled.
-START A NEW AGENT SESSION before you begin. JS0 installs the JITX skills, and a skills install
-only takes effect in a session started after it — so the session that finished JS0 cannot run
-this runbook, whose every step drives a skill.
+and tell the agent to follow it. Complete the JS0 Setup Runbook first.
+START A NEW AGENT SESSION before you begin — a skills install only takes effect in a session
+started after it, so the session that finished JS0 cannot run this runbook, whose every step
+drives a skill.
 -->
 
 # JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3)
@@ -20,21 +19,17 @@ packaging manual) is the only ground truth for package geometry. Estimate nothin
 the steps **in order**; nothing is done until it passes its checks and `jitx build <non-test design target>`. Where a step
 is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
-> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI on 4.4.0+,
-> `jitx-skills` enabled in your agent) and network access to amd.com. Reference solution:
+> **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI, `jitx-skills`
+> enabled in your agent) and network access to amd.com. Reference solution:
 > `pip install jitxexamples`, then the module
 > `jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga` — also readable on
 > [GitHub](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/versal_fpga).
-> Note the scaffold seeds a *different* package, `jitxexamples-components`, which shares the
-> `jitxexamples` namespace, so `import jitxexamples` succeeds without this one installed and only
-> the `jumpstart_kits` import fails.
 > Expect roughly 2–3 hours end to end, most of it agent-autonomous.
 
 **Assumptions / prerequisites**
 
-- JS0 is complete: `jitx --version` is 4.4.0 or newer (pre-releases count) and `jitx auth show`
-  confirms authentication. The `jitx` library your project resolves should sit on the same release
-  line as the CLI — if pip lands a different line, say so rather than silently proceeding.
+- The `jitx` library your project resolves should sit on the same release line as the CLI — if
+  pip lands a different line, say so rather than silently proceeding.
 - Python 3.12+ and `git` are available; the agent can run shell commands and fetch files from AMD.
 - `pip install pymupdf` available for extracting AM013 pages (the component-modeler skill uses it).
 
@@ -104,22 +99,11 @@ and port-storage mistakes that happy-path tests miss.
 ## Steps
 
 **0 · Preflight.**
-Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. Then run `jitx --version` (expect **4.4.0+**) and `jitx auth show` (expect **`Authorized: yes`**). Confirm the JITX skills are invocable — **invoke the base
-`jitx` skill first**, since it owns environment and runtime setup, then the two this task drives: the
-**component modeler**, and for step 11 the **circuit builder**:
+Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is,
+so the run is pinned to a known version of the kit. This task drives the **component modeler**, and
+for step 11 the **circuit builder** — invoke the base `jitx` skill first, then the component
+modeler, and confirm both are invocable before you start.
 
-- **Claude Code** — the `jitx-skills` plugin is installed; invoke with `/jitx-skills:jitx`, then
-  `/jitx-skills:jitx-component-modeler`.
-- **Codex / GPT** — invoke with `$jitx <request>`, then `$jitx-component-modeler <request>`. Name the
-  sub-skill rather than relying on `$jitx` to route to it.
-- **Devin** — invoke with `@jitx <request>`, then `@jitx-component-modeler <request>`.
-
-**`Authorized: yes` is the field that decides it.** If you also see an `Expires` timestamp in the
-past, that is normal and not a failure: the access token is regenerated from the on-disk refresh
-token when it is used, headlessly and by design. Don't stop on it, and don't report it as a problem.
-Only `Authorized: no` is a stop — and the fix for that is `jitx auth refresh`, per the base skill.
-
-If any check fails, **stop** and tell me to re-run the JS0 Setup Runbook first — do not continue.
 `--dry` is not a substitute for the build gates in steps 9 and 12.
 
 **1 · Scaffold a fresh project.**
@@ -142,13 +126,13 @@ jitx find
 ```
 
 Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from
-`test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the scaffold names
-the seeded design class after the project directory, lowercased with hyphens and spaces turned into
-underscores, so a directory called `js1-versal-fpga` builds as
-`jitx build js1_versal_fpga.main.js1_versal_fpga`. This smoke test must succeed before you write any
-code of your own. If it fails, stop and tell me. Then prepare the project: create `tests/`, add
-`pytest` and `pyright` as dev dependencies, and `git init` if you want version control. Leave the
-seeded `.gitignore` as it is.
+`test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the two halves are
+derived differently, so don't assemble it yourself: the package is the directory lowercased with
+hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A
+directory called `js1-versal-fpga` builds as `jitx build js1_versal_fpga.main.Js1VersalFpga`. This
+smoke test must succeed before you write any code of your own. If it fails, stop and tell me. Then
+prepare the project: create `tests/`, add `pytest` and `pyright` as dev dependencies, and `git init`
+if you want version control. Leave the seeded `.gitignore` as it is.
 
 **Run `pyright` inside this venv, every time.** The "pyright clean" gate in steps 9 and 12 means
 clean *here*. Run it against any other interpreter and it reports every JITX import as unresolved —

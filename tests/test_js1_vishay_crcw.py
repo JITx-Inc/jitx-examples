@@ -9,7 +9,6 @@ from jitxlib.landpatterns.twopin.SMT_table import SMT_CHIP_DEFS
 from jitxexamples.jumpstart_kits.js1_stackup_components.parametric_passives.components.vishay_crcw import (
     CRCW_DIMENSIONS,
     VishayCRCW,
-    _STANDARD_TABLE_OVERRIDES,
     format_value_code,
 )
 
@@ -104,37 +103,26 @@ class TestVishayCRCW(TestCase):
     def test_effective_dimensions_agree_with_datasheet(self):
         """What the land pattern is actually built from vs. the datasheet, per size.
 
-        This family takes ``dims=None`` for most sizes, so nothing else here would
+        This family passes ``dims=None`` for every size, so nothing else here would
         notice a wrong entry in the standard table. Transcribing the datasheet's
         DIMENSIONS AND MASS table (doc page 11) and asserting the two against each
         other is what turns "we took the defaults" into "we took the defaults and
         checked them" -- it is how the 2512 termination band was caught.
 
-        The subject is the *effective* dimensions: the datasheet override where the
-        family passes one, otherwise the standard table. That is what reaches the
-        generator, and unlike the table alone it does not depend on which jitx
-        version resolved -- the 2512 entry is wrong on 4.2.2 and corrected on later
-        builds, and this passes on both.
+        That catch used to be carried by a datasheet override for 2512, whose
+        ``lead_length`` was 2.0 +/- 0.5 mm on jitx 4.2.2 against the datasheet's
+        0.6 +/- 0.20. It is fixed upstream -- 4.4.0 carries 0.6 +/- 0.2 with the
+        body re-derived to 6.3 +/- 0.2 x 3.15 +/- 0.15 -- and the package floor is
+        now ``jitx>=4.4.0``, so the override is gone and the standard table is the
+        effective source for every size. This test is what keeps that honest.
         """
         for size, dims in CRCW_DIMENSIONS.items():
-            # Pull the three effective numbers out per branch rather than unioning
-            # the two record types: ChipDims spells the termination `lead` and
-            # SMTChipDef spells it `lead_length`, so a `ChipDims | SMTChipDef`
-            # local cannot be narrowed by a membership test and every attribute
-            # access on it is a type error.
-            if size in _STANDARD_TABLE_OVERRIDES:
-                eff_length, eff_width, lead = (
-                    dims.length.typ,
-                    dims.width.typ,
-                    dims.lead.typ,
-                )
-            else:
-                std = SMT_CHIP_DEFS[size]
-                eff_length, eff_width, lead = (
-                    std.length.typ,
-                    std.width.typ,
-                    std.lead_length.typ,
-                )
+            std = SMT_CHIP_DEFS[size]
+            eff_length, eff_width, lead = (
+                std.length.typ,
+                std.width.typ,
+                std.lead_length.typ,
+            )
             with self.subTest(size=size):
                 # Body L and W: the case is standard, so these must line up.
                 self.assertAlmostEqual(eff_length, dims.length.typ, delta=0.10)
@@ -144,16 +132,17 @@ class TestVishayCRCW(TestCase):
                     0.20,
                     f"the termination length used for {size!r} ({lead}) disagrees "
                     f"with datasheet T1 ({dims.lead.typ}); either the transcription "
-                    f"drifted or this size needs an override",
+                    f"drifted or the standard table regressed for this size",
                 )
 
-    def test_overridden_size_uses_datasheet_dimensions(self):
-        """The overridden size builds from the datasheet, not the bad default.
+    def test_2512_pad_geometry_matches_datasheet_termination(self):
+        """The 2512 land pattern is built from a 0.6 mm termination, checked in copper.
 
-        Taking ``SMT_CHIP_DEFS["2512"]``'s 2.0 mm termination band gives a pad
+        The historic 2.0 mm ``SMT_CHIP_DEFS["2512"]`` termination band gave a pad
         2.209 mm along the part axis; the datasheet's 0.6 mm T1 gives 0.833 mm.
-        Nothing else in this suite looks at realized geometry, so without this
-        the 2.65x oversize builds and ships silently.
+        Nothing else in this suite looks at realized geometry, so this is the only
+        assertion that would catch a 2.65x oversize pad actually being built --
+        whether from a standard-table regression or a bad override reintroduced.
         """
         design = VishayCRCWDesign()
         pads = design.circuit.r_2512.landpattern.p  # type: ignore

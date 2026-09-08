@@ -52,9 +52,9 @@ DATASHEET_URL = "https://www.vishay.com/docs/20035/dcrcwe3.pdf"
 #
 # The family builds its land patterns from JITX's standard chip table, not from
 # this dict -- it is transcribed so the standard table can be *checked* against
-# it, and so a size whose entry is wrong can be overridden from the datasheet.
-# See _STANDARD_TABLE_OVERRIDES below and
-# test_effective_dimensions_agree_with_datasheet.
+# it. See test_effective_dimensions_agree_with_datasheet, which asserts the two
+# against each other per size; a future disagreement is a finding to report, not
+# something to paper over silently.
 CRCW_DIMENSIONS: dict[str, ChipDims] = {
     "0402": ChipDims(_t(1.00, 0.05), _t(0.50, 0.05), _t(0.35, 0.05), _t(0.25, 0.10)),
     "0603": ChipDims(
@@ -73,26 +73,6 @@ CRCW_DIMENSIONS: dict[str, ChipDims] = {
     "2010": ChipDims(_t(5.00, 0.15), _t(2.50, 0.15), _t(0.60, 0.10), _t(0.60, 0.20)),
     "2512": ChipDims(_t(6.30, 0.20), _t(3.15, 0.15), _t(0.60, 0.10), _t(0.60, 0.20)),
 }
-
-# Sizes where JITX's standard chip table disagrees with the datasheet badly
-# enough to build the wrong land pattern, so we override it with the datasheet.
-#
-# 2512: on jitx 4.2.2 -- the version this package's floor resolves to from public
-# PyPI -- SMT_CHIP_DEFS["2512"].lead_length is 2.0 +/- 0.5 mm. The datasheet's T1
-# is 0.6 +/- 0.20, and Yageo's RC_L Table 1 gives 0.60 +/- 0.20 for the same case
-# (see yageo_rc.RC_DIMENSIONS). A 2.0 mm band on a 6.35 mm body is a third of the
-# part's length and sizes the pads from a termination roughly three times too
-# long. Every other size in this family agrees within 0.2 mm.
-#
-# Fixed upstream: later builds carry 0.6 +/- 0.2 with the body re-derived to
-# 6.3 +/- 0.2 x 3.15 +/- 0.15, which is what this override already passes -- so on
-# a fixed version the override is a no-op, and on 4.2.2 it is what keeps the land
-# pattern correct. It therefore stays until this package's jitx floor moves past
-# the fix; raising `jitx>=` in pyproject.toml is the trigger to delete it and this
-# comment. Deleting it earlier silently ships a 2.65x oversize pad to every
-# 4.2.2 user, and no test would catch that -- the suite asserts the *effective*
-# dimensions, which is exactly what the override supplies.
-_STANDARD_TABLE_OVERRIDES = ("2512",)
 
 # Rated dissipation P70 (W) per size (datasheet Technical Specifications).
 POWER_RATING: dict[str, float] = {
@@ -277,12 +257,9 @@ class VishayCRCW(jitx.Component):
 
         self.symbol = ResistorSymbol()
         # Vishay specifies standard EIA/IEC cases, so take JITX's standard chip
-        # dimensions -- except where the standard table disagrees with the
-        # datasheet badly enough to matter (see _STANDARD_TABLE_OVERRIDES).
-        self.landpattern = chip_smt_landpattern(
-            size,
-            CRCW_DIMENSIONS[size] if size in _STANDARD_TABLE_OVERRIDES else None,
-        )
+        # dimensions. Every size agrees with the datasheet within the tolerance
+        # test_effective_dimensions_agree_with_datasheet enforces.
+        self.landpattern = chip_smt_landpattern(size, None)
 
         # Two symmetric terminals; declaration order drives the default
         # port -> symbol-pin -> pad mapping (p1 -> p[1], p2 -> p[2]).

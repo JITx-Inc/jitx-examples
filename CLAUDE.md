@@ -24,19 +24,24 @@ specifically about working *with an agent* in this repo.
   context, so instantiating a `SampleDesign` works offline. Only `jitx build` / `jitx ui` need
   `jitx runtime start`; `jitx build --dry <target>` translates a design without one.
 
-- **A set of changes is parked until public JITX 4.4.x ships, and the list is
-  `internal/JITX-4.4-RELEASE-ACTIONS.md`.** Read it before planning work here: it says how to tell
-  4.4.x has actually landed on *both* surfaces (Python package and runtime), what to change when it
-  does, what is already done so you don't redo it, and one item whose trigger has **already** fired.
+- **The repo targets the jitx 4.4 line, and public PyPI serves it.** `pyproject.toml` requires
+  `jitx>=4.4.0,<5`. Two surfaces have to agree — a 4.4 package against a 4.2 runtime is not a
+  working install — so `jitx build` also needs the runtime (`~/.jitx/current`, check with
+  `jitx runtime introspect`) on the same line as the library. Before concluding demo code is broken,
+  check which `jitx` you actually resolved on both.
 
-- **The repo targets the jitx 4.4 line, which public PyPI does not serve yet.** `pyproject.toml`
-  requires `jitx>=4.4.0rc4`, today resolvable only from the internal index (a uv-backed `hatch` env
-  with `PIP_EXTRA_INDEX_URL` set). Public PyPI still tops out at 4.2.2, so CI that installs from
-  public PyPI fails until 4.4.x is publicly released — expected; the repo publishes to
-  jitx-examples only on that release, at which point the constraint should be revisited (a final
-  `>=4.4.0` drops the pre-release specifier). Before concluding that demo code is broken, check
-  which `jitx` you resolved, and note that `jitx build` also needs the runtime (`~/.jitx/current`)
-  on the same line as the library.
+- **A maintainer machine does not resolve what a customer resolves.** Developer setups here carry an
+  internal index and a pre-release opt-in, and they are not all environment variables —
+  `~/.pip/pip.conf` can set `extra-index-url` and `pre = true`, which `env -u PIP_EXTRA_INDEX_URL`
+  does not strip. To reproduce a customer's resolution, neutralise the config file as well:
+
+  ```bash
+  env -u PIP_PRE -u PIP_EXTRA_INDEX_URL -u UV_PRERELEASE -u UV_EXTRA_INDEX_URL \
+    PIP_CONFIG_FILE=/dev/null hatch test --cover
+  ```
+
+  Confirm what you got (`pip list | grep jitx`) rather than assuming: a `.dev`, `a` or `rc` suffix
+  means the isolation did not hold. Without it the `hatch` envs resolve *ahead* of the public line.
 
 - **The parts database is mocked in tests.** `tests/conftest.py` installs an autouse fixture
   patching `jitxlib.parts.query_api.dbquery` with fixtures from `captured_json/` and sets
