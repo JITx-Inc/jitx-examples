@@ -212,6 +212,7 @@ to `@jitx <request to AI>` for general work). For example:
 
 - [ ] VSCode (or Cursor / Windsurf / Devin) installed **[Engineer]**
 - [ ] Python 3.12+ available to the editor **[Engineer]**
+- [ ] Windows: `PYTHONUTF8` = `1` set as a user environment variable (same steps as [Appendix B](#appendix-b--memory-configuration-for-large-designs)) — the default `cp1252` console rejects the `Ω` and `→` in JITX output **[Engineer]**
 - [ ] JITX extension installed (pulls in JITX packages + runtime) **[IT/Admin + Engineer]**
 - [ ] First project created successfully **[Engineer]**
 
@@ -247,9 +248,10 @@ dependency set**, captured from a freshly scaffolded project on **JITX 4.4.0 wit
 the versions are **not** the floor and they move with each release, so regenerate it for the version
 you are deploying with `pip list` in the project venv.
 
-> Note: the JITX runtime version and the Python package versions do not track one-to-one — the
-> `jitx` and `jitxcore` packages report their own version numbers. Expect them to differ from the
-> runtime version; the two are versioned independently.
+> Note: the JITX runtime and the `jitx` / `jitxcore` Python packages must sit on the **same release
+> line** — the same major.minor, e.g. a 4.4.x runtime with 4.4.x packages. Patch numbers can differ;
+> release lines cannot — a 4.4 package against a 4.2 runtime is not a working install. `jitx runtime
+> introspect` reports the runtime, `pip show jitx` the package.
 
 | Package | Version |
 | --- | --- |

@@ -1,5 +1,5 @@
 <!--
-JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.3 · 2026-08-31
+JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.4 · 2026-09-08
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 together with your stackup CSV, and tell the agent to follow it. Complete the JS0 Setup Runbook
 first. START A NEW AGENT SESSION before you begin — a skills install only takes effect in a
@@ -10,11 +10,12 @@ session started after it, so the session that finished JS0 cannot run this runbo
 
 **Goal (for the agent):** Turn a fabrication house's stackup report into a verified JITX substrate in a file called `board.py` — a 20-layer HDI stack, five microvia levels per side, impedance-controlled routing structures. The user-provided documentation (e.g. CSV) is the **only** ground truth: every material, thickness, via and trace width must trace to one of its rows. Estimate nothing: if the CSV doesn't state it and the substrate-modeler skill doesn't supply a labeled default for it, ask me. Follow the steps **in order**. Where a step is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
-> **For humans:** you need a completed **JS0** (authenticated `jitx` CLI, `jitx-skills` enabled) and a stackup CSV — `part1-stackup/JS1_Part1_Fab-Stackup.csv` from this kit, or your own fab's export. Reference solution: `pip install jitxexamples`, then [`jitxexamples.jumpstart_kits.js1_stackup_components.hdi_stackup`](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/hdi_stackup).
+> **For humans:** you need a completed **JS0** (authenticated `jitx` CLI, `jitx-skills` enabled) and a stackup CSV — `part1-stackup/JS1_Part1_Fab-Stackup.csv` from this kit, or your own fab's export. Reference solution: `pip install jitxexamples`, then [`jitxexamples.jumpstart_kits.js1_stackup_components.hdi_stackup`](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/hdi_stackup). (The scaffold seeds `jitxexamples-components`, which shares the namespace, so `import jitxexamples` succeeding is not proof it is installed — the test is `import jitxexamples.jumpstart_kits`.)
 
 **Assumptions / prerequisites**
 
 - Python 3.12+ and `git` are available; the agent can run shell commands.
+- The `jitx` library your project resolves should sit on the same release line as the CLI — if pip lands a different line, say so rather than silently proceeding.
 - The stackup CSV is in the project directory, or pasted into this session.
 
 ---
@@ -25,14 +26,14 @@ session started after it, so the session that finished JS0 cannot run this runbo
 Read this runbook's revision out of the HTML comment at the top of the file and tell me what it is, so the run is pinned to a known version of the kit. This task drives the **substrate modeler** skill — confirm it is invocable before you start.
 
 **1 · Scaffold a project.**
-Run `jitx project layout init`, then set up the project environment inside it:
+Create a new project directory (copy the CSV into it, or paste the CSV into this session), run `jitx project layout init` **in it**, then set up the project environment inside it:
 
 ```bash
 # macOS / Linux
 python3 -m venv .venv && source .venv/bin/activate
 
 # Windows (PowerShell)
-py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 ```
 
 ```bash
@@ -69,9 +70,11 @@ A good result is: `pyright` reports zero errors, `pytest` is green with every as
 **8 · [HUMAN] Close the loop — re-issue the report.**
 Now show me the substrate regenerates from the report. **Invite me to change the CSV** — suggest I say: *"the fab came back on the through-hole again — 0.400 mm finished hole this time; re-issue the report and tell me what moved."* **Wait for me to ask.**
 
-Edit the CSV only with values I give you — both unit columns for the hole, the derived columns on the same row, a Rev C history line, and the `DOCUMENT` fields the skill's re-issue rule names. Per that rule, re-derive the arithmetic over the changed row and re-run the step-5 hand checks. `Depth_mm` does **not** move — it is set by the layer span, not the hole — so the new ratio is the same depth over the new hole. Then update `board.py`, rebuild, and report before → after — including what did **not** move: no dielectric changed, so no impedance row is touched and every trace width still points at its CSV row.
+Edit the CSV only with values I give you — both unit columns for the hole, the derived columns on the same row, a Rev C history line, and the `DOCUMENT` fields the skill's re-issue rule names. Per that rule, re-derive the arithmetic over the changed row and re-run the step-5 hand checks. `Depth_mm` does **not** move — it is set by the layer span, not the hole — so the new ratio is the same depth over the new hole. Keep the CSV's filename — the revision lives in its `DOCUMENT` rows, not the name — and keep every edited column at the precision it already prints (`0.350` → `0.400`, `13.78` → `15.75`). Then update `board.py`, rebuild, and report before → after — including what did **not** move: no dielectric changed, so no impedance row is touched and every trace width still points at its CSV row.
 
 **If I ask for a dielectric change instead, stop.** A dielectric change re-solves the controlled-impedance line widths, and that solve belongs to the fab — the CSV carries its result, not the model that produced it. Report the affected trace widths as blocked pending re-solved impedance rows; do not estimate them, and do not carry the old widths forward as if they still held. If I supply re-solved rows, carry them through and report before → after for every changed width.
+
+If the rebuild ends in `status: error` with `EOF when reading a line`, the runtime asked *"Significant changes detected… Do you want to continue? [Y/n]"* on a stdin it does not have under `--background` — there is no flag to pre-answer it, and piping `y` into `jitx build` does not reach it. Tell me: I stop the background runtime and run `jitx runtime start` in my own terminal, answer the prompt there, and you rebuild.
 
 Then close this step the way step 7 closes: `pyright`, `pytest`, a `jitx build` of the design that binds the substrate, and **`jitx-code-review`**. The code and tests you wrote here have not been through that gate — step 7's review went stale the moment you edited anything.
 

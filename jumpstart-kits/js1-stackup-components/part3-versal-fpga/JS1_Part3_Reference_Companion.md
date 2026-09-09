@@ -1,4 +1,4 @@
-<!-- Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3) · rev 1.1 · 2026-08-27 -->
+<!-- Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3) · rev 1.2 · 2026-09-08 -->
 
 # Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3)
 
@@ -53,8 +53,9 @@ Reference solution: the `jitxexamples` package, module
 | **Total** | **1369** |
 
 Six GTM quads, each 4 × (RXP/RXN/TXP/TXN) lanes + 2 × REFCLK pairs; the quad-column bias pins
-(`GTM_RREF_*`, `GTM_AVTTRCAL_*`, and the GTY equivalents) are single balls that take one external
-precision resistor each — the circuit wrapper exposes them as pass-through ports.
+(`GTM_AVTTRCAL_L`, `GTM_RREF_L`, `GTM_AVTTRCAL_RN`, `GTM_RREF_RN`, `GTY_AVTTRCAL_RS`,
+`GTY_RREF_RS`) are single balls that take one external precision resistor each — the circuit
+wrapper exposes them as pass-through ports.
 
 ## Two traps the runbook makes you catch
 
@@ -74,7 +75,7 @@ precision resistor each — the circuit wrapper exposes them as pass-through por
 
 - Generator reconciliation: parsed rows = file footer = **1369**, unique balls, full grid; the
   committed module regenerates **byte-identically** (`--check`).
-- 17 tests + 74 subtests pass offline on the jitx 4.4 line, including ~10 hand-read
+- 19 tests + 198 subtests pass offline on the jitx 4.4 line, including ~10 hand-read
   ball spot-checks spanning the grid corners and every bank type, symbol coverage (every port in
   exactly one box), and mapping bijectivity. Both non-test designs `jitx build` with `status: ok`.
 - Every one of the 1369 balls was **independently re-checked against the AMD file** by a

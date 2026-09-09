@@ -1,5 +1,5 @@
 <!--
-JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.3 · 2026-08-31
+JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.4 · 2026-09-08
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first.
 START A NEW AGENT SESSION before you begin — a skills install only takes effect in a session
@@ -24,6 +24,8 @@ is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 > `pip install jitxexamples`, then the module
 > `jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga` — also readable on
 > [GitHub](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/versal_fpga).
+> (The scaffold seeds `jitxexamples-components`, which shares the namespace, so `import jitxexamples`
+> succeeding is not proof it is installed — the test is `import jitxexamples.jumpstart_kits`.)
 > Expect roughly 2–3 hours end to end, most of it agent-autonomous.
 
 **Assumptions / prerequisites**
@@ -115,7 +117,7 @@ environment inside it:
 python3 -m venv .venv && source .venv/bin/activate
 
 # Windows (PowerShell)
-py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 ```
 
 ```bash
@@ -209,7 +211,9 @@ comment, coordinate tables under `# fmt: off`, the structural `gtm_quad_pins()` 
 **Mark the 60 NC balls `no_connect()`** — they are open per AMD, and an ordinary `Port()` makes that
 indistinguishable from a board designer forgetting to wire them. Output must be deterministic and
 `ruff format`-stable per the skill's rule for emitted collections, with a `--check` mode that
-regenerates and diffs. Run the generator; commit the generated module.
+regenerates and diffs. Read the pin file and write the module with explicit `encoding="utf-8"` and
+`newline="\n"` — the platform defaults (`cp1252`, CRLF on Windows) are what make `--check` drift
+between machines. Run the generator; commit the generated module.
 
 **7 · Build the land pattern — read the drawing, then the fine print.**
 From the figure captioned **"Package Dimensions for NFVI1369"** take body 35×35 mm, height
@@ -217,8 +221,11 @@ From the figure captioned **"Package Dimensions for NFVI1369"** take body 35×35
 Øb = 0.50/0.64/0.70 mm, but the JITX BGA generator's `ball_diameter` argument sets the **copper land
 diameter** of the PCB pad. Open the jitxlib BGA generator source and confirm what the parameter
 drives, then take the land from the table captioned **"BGA Package Design Rules"** (0.92 mm pitch →
-**0.51 mm** max PCB solder land, NSMD). State in a comment where each number came from, caption
-first. Build `landpattern.py` with a `VersalBGA(BGA)` subclass adding the public `get_pad(row,
+**0.51 mm** max PCB solder land, NSMD). The same row gives a **0.61 mm** solder-mask opening: decide
+whether you set it per pad or let the substrate's registration rules size the mask at build time,
+and record which in the same comment — either is defensible, an unrecorded default is not. State
+in a comment where each number came from, caption first. Build `landpattern.py` with a
+`VersalBGA(BGA)` subclass adding the public `get_pad(row,
 column)` adapter per the skill's BGA notes — both arguments zero-indexed, matching the coordinates
 the generated module carries, so ball A1 is `get_pad(0, 0)` and the framework's 1-based column
 offset lives inside the adapter rather than at every call site.
@@ -245,11 +252,14 @@ Show me, side by side with the pinout file: the corners **A1** and **AU37** (bot
 per bank type (a GTM lane, a GTY refclk, a PMC_MIO, an LPD_MIO, an XPIO pin); both sysmon pairs
 (VP/VN_500, VREFP/VREFN_500); and two GNDs from opposite corners — each as
 ball → `(row, col)` → port → pad. Also show the geometry cross-check: the A1↔AU37 pad centers
-must be 36 × 0.92 = **33.12 mm** apart on both axes (the drawing's D1/E1). **Wait for my approval.**
+must be 36 × 0.92 = **33.12 mm** apart on both axes (the drawing's D1/E1) — and **signed**: read each
+pad's `transform` and show A1 and AU37 at opposite corners, because the unsigned distance alone
+passes a mirrored grid. Put that signed check in the tests too. **Wait for my approval.**
 
 **11 · Wrap the circuit.**
-Drive the circuit-builder skill. Create `bundles.py` (`GTMQuad`: 4 × `LanePair` + 2 × REFCLK
-`DiffPair`) and `circuit.py` (`XCVP1002Circuit`): one `Power()` port per supply rail from your
+Drive the circuit-builder skill. Create `bundles.py` (`GTMQuad`: 4 × `jitx.common.LanePair` —
+upper-case `TX`/`RX` sub-ports with lower-case `p`/`n` inside — + 2 × REFCLK `DiffPair`) and
+`circuit.py` (`XCVP1002Circuit`): one `Power()` port per supply rail from your
 step-4 inventory — **no rail invented, none dropped**; a `rail_ties()` roster method; three ground
 domains (main GND takes all 689 GND + 2 RSVDGND + every main rail's `Vn`; `GND_SMON` and
 `GND_SENSE` take only their dedicated ball + their rail's `Vn`); sysmon inputs and the six GT
@@ -263,9 +273,10 @@ rules. Where this part instantiates them:
   so they land as scalar ports rather than rail lists. Two of the four carry the returns that
   *define* `GND_SMON` and `GND_SENSE`, so a roster built by walking the rail lists both undercounts
   and silently collapses the three-ground requirement.
-- **The six GT bias pins live in banks 109, 203 and 105** — 109 carries its pair and **no lanes at
-  all**. They serve whole supply groups, so keep them out of `GTMQuad`: model them per-quad and four
-  of the six quads have none.
+- **The six GT bias pins live in banks 109, 203 and 105** — `GTM_AVTTRCAL_L`, `GTM_RREF_L`,
+  `GTM_AVTTRCAL_RN`, `GTM_RREF_RN`, `GTY_AVTTRCAL_RS`, `GTY_RREF_RS`; 109 carries its pair and **no
+  lanes at all**. They serve whole supply groups, so keep them out of `GTMQuad`: model them per-quad
+  and four of the six quads have none.
 - **The `_L` / `_RS` group tags come from the bank diagram**, not the pin file — including which
   groups have no bonded quad in this package.
 
@@ -277,16 +288,19 @@ named net colliding with a public port name fails only in the full runtime build
 already in use"); `jitx build --dry` cannot see it.
 
 **12 · Verify the circuit.**
-Extend the tests (rail roster + sizes, ground-domain separation, 6 quads × 20 topology links,
-circuit design translates), then `pyright` → `pytest` → `jitx build <non-test circuit design target>` →
+Extend the tests (rail roster + sizes, ground-domain separation, 6 quads × 20 topology links **and**,
+for at least one quad, that each link's two endpoints are the expected bundle sub-port and component
+ball — a count alone passes a lane- or polarity-swapped wiring; circuit design translates), then
+`pyright` → `pytest` → `jitx build <non-test circuit design target>` →
 `jitx-code-review`. Commit when green.
 
 **13 · [HUMAN] Close the loop.**
 The wrapper is what a board design consumes; show me. **Invite me to ask for something** —
 suggest I say: *"give me GTM quad 205 as a 4-lane bundle and tell me which power rails and bias
 pins it needs."* **Wait for me to ask.** Answer from the built circuit (bundle port, rail ties,
-bias pass-throughs), then open the schematic viewer (`jitx ui open --schematic`) on the bank-205
-page so I can see the quad.
+bias pass-throughs), then open the schematic viewer (`jitx ui open --schematic`, in the background
+— it blocks while its window is open, see JS0 step 5) and tell me the bank-205 page to look at: the
+CLI opens the design, not a page, so I navigate there in the viewer.
 
 **This answer goes through a gate like every other step.** State which document each claim comes
 from; anything not derivable from the built design or the step-2 documents, say so rather than

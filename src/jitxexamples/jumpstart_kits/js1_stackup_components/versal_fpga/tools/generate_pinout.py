@@ -637,14 +637,14 @@ def main(argv: list[str] | None = None) -> int:
         help="regenerate and diff against --out; exit 1 on drift",
     )
     args = parser.parse_args(argv)
-    text = args.pinout_file.read_text()
+    text = args.pinout_file.read_text(encoding="utf-8")
     model = classify(parse_pinout(text, args.pinout_file.name))
     if args.report:
         print(inventory_report(model))
         return 0
     emitted = emit_module(model)
     if args.check:
-        committed = args.out.read_text()
+        committed = args.out.read_text(encoding="utf-8")
         if committed == emitted:
             print(f"OK: {args.out} matches regeneration")
             return 0
@@ -653,7 +653,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         sys.stdout.writelines(line + "\n" for line in list(diff)[:60])
         return 1
-    args.out.write_text(emitted)
+    args.out.write_text(emitted, encoding="utf-8", newline="\n")
     counts = f"{len(model.uniques)} unique ports, {len(model.rails)} rails"
     print(f"wrote {args.out} ({counts}, {model.pinout.total_from_footer} balls)")
     return 0

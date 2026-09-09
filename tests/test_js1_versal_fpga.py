@@ -188,6 +188,34 @@ class TestComponent(TestCase):
                 pads = _mapped_pads(mapping, port)
                 self.assertIs(pads[0], lp.get_pad(row, col))
 
+    def test_corner_pads_signed(self):
+        """A1 and AU37 sit at opposite *signed* corners, D1/E1 = 33.12 mm apart.
+
+        The unsigned distance alone passes a mirrored grid; the signs pin the
+        orientation: rows run A at +y down to AU at -y, columns 1 at -x up to
+        37 at +x, and the array is centred on the origin.
+        """
+        lp = component_design().circuit.fpga.landpattern  # type: ignore
+        half = 36 * 0.92 / 2
+        corners = {
+            "A1": ((0, 0), (-half, half)),
+            "AU37": ((36, 36), (half, -half)),
+            "A37": ((0, 36), (half, half)),
+            "AU1": ((36, 0), (-half, -half)),
+        }
+        for ball, ((row, col), (x, y)) in corners.items():
+            with self.subTest(ball=ball):
+                transform = lp.get_pad(row, col).transform
+                assert transform is not None
+                tx, ty = transform.translation
+                self.assertAlmostEqual(tx, x)
+                self.assertAlmostEqual(ty, y)
+        a1 = lp.get_pad(0, 0).transform
+        au37 = lp.get_pad(36, 36).transform
+        assert a1 is not None and au37 is not None
+        self.assertAlmostEqual(au37.translation[0] - a1.translation[0], 36 * 0.92)
+        self.assertAlmostEqual(a1.translation[1] - au37.translation[1], 36 * 0.92)
+
     def test_symbol_coverage(self):
         fpga = component_design().circuit.fpga  # type: ignore
         partitions = list(fpga.symbol_partitions())
@@ -330,6 +358,37 @@ class TestCircuit(TestCase):
             self.assertEqual(len(quad.REFCLK), 2)
         # 6 quads x (4 lanes x 4 signals + 2 refclks x 2) topology segments
         self.assertEqual(len(circ.gtm_links), 6 * (4 * 4 + 2 * 2))
+
+    def test_gtm_link_endpoints(self):
+        """Every link joins the expected bundle sub-port to the expected ball.
+
+        The count above passes a lane- or polarity-swapped wiring; this does
+        not. Expected pairs come from the generated ``gtm_quad_pins()`` roster
+        (lane / refclk index order), independent of how the circuit builds them.
+        """
+        circ = circuit_design().circuit.fpga_circuit  # type: ignore
+        quad_pins = circ.fpga.gtm_quad_pins()
+        expected = {}
+        for bank, quad in circ.gtm.items():
+            pins = quad_pins[bank]
+            for lane, lane_pair in enumerate(quad.L):
+                expected[id(lane_pair.TX.p)] = (bank, "TX.p", lane, pins.txp[lane])
+                expected[id(lane_pair.TX.n)] = (bank, "TX.n", lane, pins.txn[lane])
+                expected[id(lane_pair.RX.p)] = (bank, "RX.p", lane, pins.rxp[lane])
+                expected[id(lane_pair.RX.n)] = (bank, "RX.n", lane, pins.rxn[lane])
+            for i, refclk in enumerate(quad.REFCLK):
+                expected[id(refclk.p)] = (bank, "REFCLK.p", i, pins.refclkp[i])
+                expected[id(refclk.n)] = (bank, "REFCLK.n", i, pins.refclkn[i])
+        self.assertEqual(len(expected), len(circ.gtm_links))
+        seen = set()
+        for link in circ.gtm_links:
+            bundle_port, ball_port = link.sequence
+            self.assertIn(id(bundle_port), expected)
+            bank, label, index, pin = expected[id(bundle_port)]
+            with self.subTest(bank=bank, port=label, index=index):
+                self.assertIs(ball_port, pin)
+            seen.add(id(bundle_port))
+        self.assertEqual(len(seen), len(expected))
 
     def test_circuit_design_translates(self):
         packaged = package_design(circuit_design())

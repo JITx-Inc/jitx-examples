@@ -1,5 +1,5 @@
 <!--
-JITX Setup Runbook (JS0) · rev 1.4 · 2026-08-31
+JITX Setup Runbook (JS0) · rev 1.5 · 2026-09-08
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it.
 -->
@@ -19,7 +19,7 @@ and tell the agent to follow it.
 **Assumptions / prerequisites**
 
 - Python 3.12+ and `git` are available.
-- You are running inside an AI coding agent that can execute shell commands (not sandboxed).
+- You are running inside an AI coding agent that can execute shell commands (not sandboxed). If your harness gates commands or network access behind approval prompts, expect them at the installers (steps 1–2), the background runtime start, the `git clone`, and each `jitx ui open` — approve them; none of those steps works from a read-only sandbox.
 - (Optional) A code editor is installed (VSCode, Cursor, or Windsurf/Devin).
 
 ---
@@ -78,7 +78,7 @@ Drive these with the base JITX skill (step 4). The step-1 CLI has no `pip`, so r
 python3 -m venv .venv && source .venv/bin/activate
 
 # Windows (PowerShell)
-py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 ```
 
 ```bash
@@ -89,9 +89,14 @@ jitx find
 ```
 
 - **5a — Simplest build.** Run `jitx project layout init` to create a new JITX project seeded with a two-resistor sample design (Devin users: you made this project in step 4). Then run the setup commands above and build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `my-first-board` builds as `jitx build my_first_board.main.MyFirstBoard`. Then show me the schematic and board views.
-- **5b — Full build.** Clone `https://github.com/JITx-Inc/jitx-examples`, run the setup commands above, and **take the `si_bga_optimization` target verbatim from `jitx find`** — the same rule as 5a, so a repo reorganisation can't strand you on a stale module path. Expect `jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design`. Build it, confirm it builds, and display the board UI windows for me.
+- **5b — Full build.** Clone `https://github.com/JITx-Inc/jitx-examples`, run the setup commands above, and **take the `si_bga_optimization` target verbatim from `jitx find`** — the same rule as 5a, so a repo reorganisation can't strand you on a stale module path. Expect `jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design`. Two things about this repo's output: `jitx find` also prints an `errors: import failed` block for the repo's `tests/` modules — expected here (its tests aren't a package) and not a fault; the `designs:` list is what you take the target from. And after `jitx project dependencies upgrade`, `pip show jitx` and `jitx runtime introspect` must report the same release line (4.4.x with 4.4.x) — if the upgrade moved `jitx` to a different line than the runtime, stop and tell me rather than building. Build it, confirm it builds, and display the board UI windows for me.
 
 > **If a build fails with "You are not authenticated. Please sign in through the JITX Sidebar in VSCode"**, that means step 3 didn't complete — re-run `jitx auth login`, don't go looking for VSCode. `jitx runtime start --background` succeeds while unauthenticated, so a green step 2 is not proof of sign-in, and the real one-line cause arrives underneath two Python tracebacks.
+
+> **[Windows] Two things the PowerShell block is protecting you from.**
+>
+> - **`$env:PYTHONUTF8 = "1"` is not optional.** JITX output and these runbooks carry `Ω`, `→` and `·`, and the default `cp1252` console raises `UnicodeEncodeError` on them — a build that is otherwise fine stops on a resistor value. The line sets it for this shell only; to make it permanent, add `PYTHONUTF8` = `1` as a user environment variable the way Environment Setup's Appendix B does for the heap variables.
+> - **`WinError 32` from `jitx project dependencies upgrade`** means pip is trying to replace the `jitx.exe` that is running it — it only happens when the upgrade has to move `jitx` itself. Do that one step from Python instead, then re-run the upgrade: `.\.venv\Scripts\python.exe -m pip install --upgrade jitx`, then `jitx project dependencies upgrade` again (nothing left to move).
 
 > **Opening the views — what to expect.**
 >
@@ -108,7 +113,7 @@ Report the results of both builds.
 Search the editor's (or VSCode's) marketplace for the JITX extension and install it via that editor's CLI. Ask me to confirm it's installed and its sidebar shows me authenticated.
 
 **7 · [HUMAN] Close the loop — make a live design change.**
-Now show me the design-as-code loop on the step-5 design. **Invite me to make a change**, then **wait for me to ask.** Report the before → after values. If the view doesn't redraw after the rebuild, reopen it — see step 5's note on how `jitx ui open` behaves.
+Now show me the design-as-code loop on the step-5 design. **Invite me to make a change**, then **wait for me to ask.** Report the before → after values. The board view that is already open normally redraws on its own after the rebuild — check it (ask me what I see) before you reopen anything, and reopen only if it didn't; see step 5's note on how `jitx ui open` behaves.
 
 - **If 5b ran** — tell me I can adjust the differential-pair geometry; suggest I say: *"change the differential-pair trace width to 0.0762 mm and the pair spacing to 0.1568 mm."* Edit the constants — `DIFFPAIR_TRACE_WIDTH` → `0.0762` and `DIFFPAIR_PAIR_SPACING` → `0.1568` (in the design's `substrate.py`) — rebuild, and show me **both** the changed source lines and the updated board view. Say plainly what the edit costs: those constants are the 85 Ω stripline geometry, so the new values detune every 85 Ω signal layer. We're changing them to watch a source edit reach the board, and in real work you'd re-solve the geometry for the impedance target. **Then point me at the right layer** — select `L2-Signal1` and zoom into the BGA escape region, where the diff-pair geometry lives. The change is subtle but visible there; it won't show on the default `L1-Ground1` whole-board view.
 - **If 5b didn't build** — fall back to the 5a design: tell me I can change a resistor value, and suggest I say *"change r2 to 10 kΩ."* Edit that resistor's `resistance` in the project's `main.py`, rebuild, and show me the changed line and the updated schematic. Say which design you used.
@@ -121,3 +126,4 @@ Now show me the design-as-code loop on the step-5 design. **Invite me to make a 
 - The JITX skills are visible **and invocable** in a new agent session, confirmed by actually invoking one.
 - **5a** (two-resistor template) builds, and so does **5b** (`si_bga_optimization`).
 - A prompted design change — the diff-pair edit on 5b, or a resistor value on 5a if 5b didn't build — is applied, rebuilt, and visible in both the code and the UI.
+- You have listed the `jitx ui open` jobs you backgrounded, so I can close the windows myself — don't kill them; the windows are what I came to see.

@@ -64,8 +64,10 @@ def _dims(
 
 
 # Yageo size label -> JITX SMT_CHIP_DEFS case key, where the two differ. Most
-# sizes use their imperial label directly; the ultra-tiny 0075/0100 are keyed in
-# the generator by their metric body size (0.30x0.15 mm, 0.40x0.20 mm).
+# Yageo labels are the EIA imperial code the generator keys on; the ultra-tiny
+# 0075/0100 are Yageo's own labels, so they map by body size to that code:
+# 0075 = 0.30x0.15 mm = metric 03015 = imperial 009005, and
+# 0100 = 0.40x0.20 mm = metric 0402 = imperial 01005.
 _SMT_KEY: dict[str, str] = {"0075": "009005", "0100": "01005"}
 
 # Dimensions (mm) from datasheet Table 1: _dims(L, +/-, W, +/-, H, +/-, l2, +/-)

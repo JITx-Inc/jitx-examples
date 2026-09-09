@@ -1,5 +1,5 @@
 <!--
-JITX Parametric Component Families Runbook (JS1 · Part 2) · rev 1.3 · 2026-08-31
+JITX Parametric Component Families Runbook (JS1 · Part 2) · rev 1.4 · 2026-09-08
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first.
 START A NEW AGENT SESSION before you begin — a skills install only takes effect in a session
@@ -16,6 +16,7 @@ drives a skill.
 **Assumptions / prerequisites**
 
 - Python 3.12+ and `git` are available; the agent can run shell commands and fetch PDFs.
+- The `jitx` library your project resolves should sit on the same release line as the CLI — if pip lands a different line, say so rather than silently proceeding.
 - `pip install pymupdf` is available for datasheet page extraction (the component-modeler skill uses it).
 
 ---
@@ -96,7 +97,7 @@ Create a new project directory and run `jitx project layout init` (seeds a two-r
 python3 -m venv .venv && source .venv/bin/activate
 
 # Windows (PowerShell)
-py -3.12 -m venv .venv; .\.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 ```
 
 ```bash
@@ -114,15 +115,15 @@ Download all four manufacturer datasheets into `.context/` (gitignored — **lin
 - **Yageo RC_L** — https://yageogroup.com/content/datasheet/asset/file/PYU-RC_GROUP_51_ROHS_L (the RC_L series datasheet, all sizes 0075–2512).
 - **Panasonic ERJ** — https://industrial.panasonic.com/cdbs/www-data/pdf/RDA0000/AOA0000C301.pdf
 - **Vishay CRCW** — https://www.vishay.com/docs/20035/dcrcwe3.pdf
-- **Samsung CL (MLCC)** — the Samsung Electro-Mechanics MLCC catalog PDF: https://product.samsungsem.com/resources/file/product-catalog/MLCC_2512.pdf (the filename is dated per revision — if it has moved, get the newest MLCC catalog from https://product.samsungsem.com/product-catalog.do). It contains the part-numbering scheme, case-size dimension tables, and the dielectric/voltage lineup.
+- **Samsung CL (MLCC)** — the Samsung Electro-Mechanics MLCC catalog PDF: https://product.samsungsem.com/resources/file/product-catalog/MLCC_2512.pdf (the filename is dated per revision — if it has moved, get the newest MLCC catalog from https://product.samsungsem.com/product-catalog.do). It contains the part-numbering scheme and the dielectric/voltage lineup; step 7 names what it does **not** contain.
 
 Per the skill's **"Verify the download is a datasheet"**: these four URLs are canonical, so if one doesn't answer, say whether you hit an egress problem or a moved document, and tell me which URL you ended up using.
 
 **3 · Family 1 — Yageo RC_L.**
-Drive the component-modeler skill with the Yageo datasheet to build `yageo_rc.py`, following its **Parameterized Component Families** and **Two-Terminal Chip Components** sections. Values encode in Yageo's RKM style (`100K`). Keep this family **self-contained in one file — no shared helpers yet**. Write `tests/test_yageo_rc.py` per the skill's **"Verifying a component with tests"**, cross-checking the datasheet's own ordering example **`RC0402JR-07100KL`**. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
+Drive the component-modeler skill with the Yageo datasheet to build `yageo_rc.py`, following its **Parameterized Component Families** and **Two-Terminal Chip Components** sections. Values encode in Yageo's RKM style (`100K`). Keep this family **self-contained in one file — no shared helpers yet**. Write `tests/test_yageo_rc.py` per the skill's **"Verifying a component with tests"**, cross-checking the datasheet's own ordering example **`RC0402JR-07100KL`**. Table-driven checks go in `self.subTest(...)` — pytest's `parametrize` does not apply to `unittest`-style `TestCase` methods, and `jitx.test.TestCase` is one. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
 
 **4 · [HUMAN] Verify Family 1 together.**
-Stop and walk me through the family against the datasheet before replicating the pattern. Show me: (a) two or three transcribed dimensions side-by-side with the datasheet table, **including which of the two printed termination bands you used and why**; (b) the encoder reproducing the ordering-example MPN and a decade-carry case (`9999 → "10K"`); (c) a fail-fast rejection listing the valid options — run this demo **inside the instantiation context**, since a plain script raises nothing; (d) how each vendor size label maps to the generator's size key by body L×W — including the label mismatch (Yageo `0075` → `009005`); (e) the skill's filled **Component completeness check** block. **Wait for my approval** before continuing.
+Stop and walk me through the family against the datasheet before replicating the pattern. Show me: (a) two or three transcribed dimensions side-by-side with the datasheet table, **including which of the two printed termination bands you used and why**; (b) the encoder reproducing the ordering-example MPN and a decade-carry case (`9999 → "10K"`); (c) a fail-fast rejection listing the valid options — run this demo **inside the instantiation context**, since a plain script raises nothing; (d) how each vendor size label maps to the generator's size key by body L×W — three naming systems meet here: the vendor's own label, the metric code, and the EIA imperial code the generator keys on. Yageo's `0075` is a 0.30 × 0.15 mm body, metric `03015`, imperial (and JITX key) `009005`; its `0100` is 0.40 × 0.20 mm, metric `0402`, imperial `01005`; (e) the skill's filled **Component completeness check** block. **Wait for my approval** before continuing.
 
 **5 · Family 2 — Panasonic ERJ.**
 Build `panasonic_erj.py` from the Panasonic datasheet: 3-digit EIA value code (`103`), its own tables and MPN f-string. This is the second consumer, so per the skill's **"Shared helpers — extract at the second family"**, extract them now into `chip_resistor.py` and refactor Family 1 onto them — Family 1's unchanged tests passing proves the refactor safe. Write `tests/test_panasonic_erj.py`, cross-checking **`ERJ3GEYJ102V`**. Verify: `pyright` → `pytest` (all families) → `jitx build <non-test design target>`. Commit when green.
@@ -139,7 +140,7 @@ Create a small combined `SampleDesign` that instantiates one part from **each of
 A good result is: `pyright` reports zero errors and no suppressions, the full `pytest` suite is green including every family's datasheet cross-check, `jitx build <non-test design target>` completes on the combined design, `jitx-code-review` returns no unresolved findings, and each family has its **Component completeness check** block filled in, written next to the code.
 
 **9 · [HUMAN] Close the loop — request a part.**
-The library is done; now show me what it's for. **Invite me to ask for an arbitrary part** — suggest I say: *"give me a 49.9 kΩ 0402 1% Yageo and a 100 nF X7R 0603 50 V Samsung CL."* **Wait for me to ask.** When I do, instantiate the requested parts from the family classes in the combined design, rebuild, and show me the schematic/board plus the **generated MPNs**, so I can spot-check them against the datasheets' part-numbering schemes.
+The library is done; now show me what it's for. **Invite me to ask for an arbitrary part** — suggest I say: *"give me a 49.9 kΩ 0402 1% Yageo and a 100 nF X7R 0603 50 V Samsung CL."* **Wait for me to ask.** When I do, instantiate the requested parts from the family classes in the combined design, rebuild, and show me the schematic/board — launch `jitx ui open` in the background, it blocks while its window is open (JS0 step 5 explains) — plus the **generated MPNs**, so I can spot-check them against the datasheets' part-numbering schemes.
 
 This step writes code, so it goes through step 8's gate like every other step — finish with the full verification block (`pyright` → `pytest` → `jitx build <non-test design target>` → `jitx-code-review`). Don't let the last code written be the only code that skipped the review. Print the BOM as well as the MPNs: value labels are the one thing none of those four commands checks.
 

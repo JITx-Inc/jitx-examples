@@ -71,7 +71,7 @@ a machine-readable file — so you parse it rather than transcribe it. A committ
 generator reconciles the file to exactly 1,369 balls before any component code exists, and the
 circuit wrapper lifts the flat pin map into what a board designer actually consumes: 31 `Power`
 rails, three ground domains, and six GTM transceiver quads as bundles. Verification is layered —
-reconciliation (parsed rows = file footer = full 37×37 grid), 17 tests and 74 subtests including
+reconciliation (parsed rows = file footer = full 37×37 grid), 19 tests and 198 subtests including
 hand-read ball spot-checks, and both designs building `status: ok`. Expect roughly 2–3 hours across
 four `[HUMAN]` gates, most of it agent-autonomous.
 
