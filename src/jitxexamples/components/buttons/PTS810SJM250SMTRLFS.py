@@ -1,15 +1,20 @@
+"""
+PTS810SJM250SMTRLFS
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.circuit import Circuit
 from jitx.common import Power
 from jitx.component import Component
+from jitx.feature import Finish, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad
 from jitx.layerindex import Side
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Polyline, Text
-from jitx.feature import Finish, Paste, Silkscreen, Soldermask
 from jitx.symbol import Direction, Pin, Symbol
+from jitx.units import F, ohm
 from jitxlib.parts import Capacitor, Resistor
 
 
@@ -173,31 +178,32 @@ class PTS810SJM250SMTRLFSCircuit(Circuit):
     power = Power()
     button_out = Port()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the tactile switch circuit"""
 
         self.switch = PTS810SJM250SMTRLFS()
 
         # Pull-up resistor (10kΩ)
         # Ensures button_out is HIGH when switch is not pressed
-        self.r_pullup = Resistor(resistance=10e3, case="0603").insert(
-            self.button_out, self.power.Vp
-        )
+        self.r_pullup = Resistor(resistance=(10e3) * ohm, case="0603")
 
         # Debounce capacitor (100nF)
         # Filters mechanical bounce when pressing/releasing
         # Place close to switch for effective debouncing
-        self.c_debounce = Capacitor(capacitance=100e-9, case="0603").insert(
-            self.switch.p1, self.power.Vn, short_trace=True
-        )
+        self.c_debounce = Capacitor(capacitance=(100e-9) * F, case="0603")
+        self.c_debounce_short_traces = [
+            ShortTrace(self.switch.p1, self.c_debounce.p1),
+            ShortTrace(self.c_debounce.p2, self.power.Vn),
+        ]
 
         # Net connections
-        # p1 and p3 are connected together (one side of switch)
+        # p1 and p3 are connected together (one side of switch), pulled up
         # p2 and p4 are connected together (other side of switch)
-        self.nets = [
-            self.switch.p1 + self.switch.p3 + self.button_out,
-            self.switch.p2 + self.switch.p4 + self.power.Vn,
-        ]
+        self.BUTTON_OUT = (
+            self.switch.p1 + self.switch.p3 + self.button_out + self.r_pullup.p1
+        )
+        self.VCC = self.r_pullup.p2 + self.power.Vp
+        self.GND = self.switch.p2 + self.switch.p4 + self.power.Vn
 
 
 Device: type[PTS810SJM250SMTRLFSCircuit] = PTS810SJM250SMTRLFSCircuit

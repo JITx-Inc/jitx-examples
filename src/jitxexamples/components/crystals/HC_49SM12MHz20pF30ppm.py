@@ -1,3 +1,7 @@
+"""
+HC-49SM12MHz20pF30ppm
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component

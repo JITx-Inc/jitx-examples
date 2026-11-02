@@ -7,19 +7,20 @@ and TVS protection.
 """
 
 from jitx.anchor import Anchor
+from jitx.circuit import Circuit
+from jitx.common import GPIO, Power
+from jitx.component import Component
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad, PadMapping
 from jitx.model3d import Model3D
-from jitx.net import Port
+from jitx.net import Net, Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Circle, Polyline, Text
 from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
-from jitx.component import Component
-from jitx.circuit import Circuit
-from jitx.common import Power, GPIO
-from jitx.net import Net
+from jitx.units import F, ohm
 from jitxlib.parts import Capacitor, Resistor
 from jitxlib.protocols.serial import UART
+
 
 from ..diodes_tvs.littelfuse_SMBJ43CA import SMBJ43CA
 
@@ -184,51 +185,52 @@ class SN65HVD1781DRReferenceCircuit(Circuit):
     rs485_b = Net(name="RS485_B")
     """RS-485 B line (inverting)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Main RS-485 transceiver IC
         self.transceiver = SN65HVD1781DR()
 
         # Power supply bypass capacitor (100nF)
         self.bypass_cap = Capacitor(
-            capacitance=100e-9, temperature_coefficient_code="X7R"
-        ).insert(self.transceiver.VCC, self.transceiver.GND, short_trace=True)
+            capacitance=(100e-9) * F, temperature_coefficient_code="X7R"
+        )
+        self.bypass_cap_short_traces = [
+            ShortTrace(self.transceiver.VCC, self.bypass_cap.p1),
+            ShortTrace(self.bypass_cap.p2, self.transceiver.GND),
+        ]
 
         # Pull-up resistors for RE and DE pins (10kΩ each)
-        self.re_pullup = Resistor(resistance=10e3).insert(
-            self.transceiver.VCC, self.transceiver.RE_NOT
-        )
-        self.de_pullup = Resistor(resistance=10e3).insert(
-            self.transceiver.VCC, self.transceiver.DE
-        )
+        self.re_pullup = Resistor(resistance=(10e3) * ohm)
+        self.de_pullup = Resistor(resistance=(10e3) * ohm)
 
         # Series resistors for RS-485 bus (10Ω each for impedance matching)
-        self.rs485a_series = Resistor(resistance=10.0).insert(
-            self.transceiver.A, self.rs485_a
-        )
-        self.rs485b_series = Resistor(resistance=10.0).insert(
-            self.transceiver.B, self.rs485_b
-        )
+        self.rs485a_series = Resistor(resistance=(10.0) * ohm)
+        self.rs485b_series = Resistor(resistance=(10.0) * ohm)
 
         # TVS diodes for RS-485 bus protection (using SMBJ43CA as shown in schematic)
 
         self.tvs_rs485a = SMBJ43CA()
         self.tvs_rs485b = SMBJ43CA()
 
-        # Connect power and ground
+        # Connect power and ground; the RE and DE pull-ups go to VCC and the
+        # TVS diode cathodes to ground
         assert self.uart.rx and self.uart.tx
-        self.nets = [
-            self.power.Vp + self.transceiver.VCC,
-            self.power.Vn + self.transceiver.GND,
-            # UART interface connections
-            self.uart.rx + self.transceiver.R,
-            self.uart.tx + self.transceiver.D,
-            self.dir_pin.gpio + self.transceiver.DE,
-            # RS-485 bus connections with TVS protection (after series resistors)
-            self.rs485_a + self.tvs_rs485a.A,
-            self.rs485_b + self.tvs_rs485b.A,
-            # TVS diode cathodes to ground
-            self.power.Vn + self.tvs_rs485a.K + self.tvs_rs485b.K,
-        ]
+        self.VCC = (
+            self.power.Vp + self.transceiver.VCC + self.re_pullup.p1 + self.de_pullup.p1
+        )
+        self.GND = (
+            self.power.Vn + self.transceiver.GND + self.tvs_rs485a.K + self.tvs_rs485b.K
+        )
+        self.RE_NOT = self.re_pullup.p2 + self.transceiver.RE_NOT
+        # UART interface connections
+        self.R = self.uart.rx + self.transceiver.R
+        self.D = self.uart.tx + self.transceiver.D
+        self.DE = self.de_pullup.p2 + self.dir_pin.gpio + self.transceiver.DE
+        # RS-485 bus: transceiver side of the series resistors, then the bus
+        # side with TVS protection
+        self.A = self.transceiver.A + self.rs485a_series.p1
+        self.B = self.transceiver.B + self.rs485b_series.p1
+        self.RS485_A = self.rs485_a + self.rs485a_series.p2 + self.tvs_rs485a.A
+        self.RS485_B = self.rs485_b + self.rs485b_series.p2 + self.tvs_rs485b.A
 
 
 Device: type[SN65HVD1781DRReferenceCircuit] = SN65HVD1781DRReferenceCircuit

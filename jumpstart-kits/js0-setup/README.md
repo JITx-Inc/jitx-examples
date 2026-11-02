@@ -8,16 +8,9 @@ steps that need you. Everything below is the context around it.
 Takes you from scratch to a configured, authenticated, skills-enabled JITX environment — proven by
 two real builds and a closing design-as-code change. Work through JS0 before JS1.
 
-Requires JITX 4.4.0 or newer.
+Requires JITX 4.6.x.
 
 ## Start here — the JS0 walkthrough
-
-You can get oriented by reading this page or alternatively downloading the 5-slide deck.
-Instruction content is also available as a PDF or PPTX for reference or distribution, from the
-[Presentation](presentation/) page:
-
-- [JS0_Presentation.pdf](presentation/JS0_Presentation.pdf) — read-only, opens anywhere
-- [JS0_Presentation.pptx](presentation/JS0_Presentation.pptx) — editable PowerPoint
 
 ### The goal — get JITX set up and AI-enabled correctly
 

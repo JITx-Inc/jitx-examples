@@ -1,16 +1,19 @@
+"""
+U.FL-R-SMT(10)
+"""
+
 from jitx.circuit import Circuit
 from jitx.component import Component
 from jitx.container import inline
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
-from jitx.interval import Interval
 from jitx.landpattern import Landpattern, Pad, PadMapping
 from jitx.net import Port
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Anchor, Arc, ArcPolyline, Polygon, Polyline, Text
 from jitx.si import BridgingPinModel
-from jitx.symbol import Pin, Symbol, Direction, SymbolMapping
-from jitxlib.parts import Capacitor
-from jitxlib.parts.query_api import Inductor
+from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F, H, Hz
+from jitxlib.parts import AtLeast, Capacitor, Inductor
 
 
 class Pad1(Pad):
@@ -1649,11 +1652,11 @@ class U_FL_R_SMT_10(Circuit):
     sig = Port()
     gnd = Port()
 
-    C_R = Capacitor(capacitance=0.5e-12, temperature_coefficient_code="C0G")
+    C_R = Capacitor(capacitance=(0.5e-12) * F, temperature_coefficient_code="C0G")
     L = Inductor(
-        inductance=4.7e-9,
-        self_resonant_frequency=Interval(7e6),
-        quality_factor=Interval(8),
+        inductance=(4.7e-9) * H,
+        self_resonant_frequency=AtLeast(7e6 * Hz),
+        quality_factor=AtLeast(8),
     )
 
     C_R.schematic_x_out = True
@@ -1663,14 +1666,12 @@ class U_FL_R_SMT_10(Circuit):
     L.in_bom = False
     L.soldered = False
 
-    def __init__(self):
-        self.nets = [
-            self.sig + self.component.SIG,
-            self.sig + self.L.p1,
-            BridgingPinModel(self.L.p1, self.L.p2, delay=0, loss=0),
-            self.L.p2 + self.C_R.p1 + self.component.SIG,
-            self.gnd + self.C_R.p2 + self.component.GND[0] + self.component.GND[1],
-        ]
+    def __init__(self) -> None:
+        self.SIG = self.sig + self.component.SIG + self.L.p1 + self.L.p2 + self.C_R.p1
+        self.l_pin_model = BridgingPinModel(self.L.p1, self.L.p2, delay=0, loss=0)
+        self.GND = (
+            self.gnd + self.C_R.p2 + self.component.GND[0] + self.component.GND[1]
+        )
 
 
 Device: type[U_FL_R_SMT_10] = U_FL_R_SMT_10

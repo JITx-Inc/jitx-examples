@@ -1,3 +1,7 @@
+"""
+2N3904S-RTK/PS
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component as JITXComponent

@@ -13,12 +13,11 @@ build-backend = "hatchling.build"
 name = "jitxexamples"
 dynamic = ["version"]
 dependencies = [
-  "jitx>=4.4.0,<5",
-  "jitxlib-standard>=4.4.0,<5",
-  "jitxlib-parts>=1.3.0,<2",
-  "jitxlib-voltage-divider>=1.0.0,<2",
-  "eseries",
-  "pytest",
+  "jitx>=4.6.0rc2,<4.7",
+  "jitxlib-standard>=4.6.0rc2,<4.7",
+  "jitxlib-parts>=2.0.0rc1,<3",
+  "eseries>=1.2.1,<2",
+  "shapely>=2.1,<3",
 ]
 requires-python = ">=3.12"
 authors = [
@@ -39,8 +38,9 @@ packages = ["src/jitxexamples"]
 # The sdist otherwise ships the whole non-gitignored tree, which is how
 # `jumpstart-kits/` reaches docs.jitx.com (the docs build extracts it from the
 # released sdist). Only `exclude` is set here so that default file selection --
-# and therefore `jumpstart-kits/` -- is preserved. `internal/` is the one tree
-# held back: it is maintainer-only and must reach no deployment surface.
+# and therefore `jumpstart-kits/` -- is preserved. The repo has no `internal`
+# tree; the entry stays as a guard, so a maintainer-only tree of that name, if
+# one is added again, reaches no deployment surface.
 [tool.hatch.build.targets.sdist]
 exclude = ["internal"]
 
@@ -56,6 +56,10 @@ dependencies = [
   "coverage[toml]",
   "pytest",
   "pytest-cov",
+  # test_docstring_rst.py parses docstrings the way the docs build does, which
+  # means napoleon's preprocessing and docutils -- both of which arrive with
+  # Sphinx. Same pin as the `types` env and docs/requirements.txt.
+  "sphinx>=8.1.0,<9.0",
 ]
 
 [[tool.hatch.envs.test.matrix]]
@@ -98,22 +102,13 @@ skip-magic-trailing-comma = false
 [tool.hatch.envs.types]
 extra-dependencies = [
   "pyright>=1.1.0",
+  "pytest",
   "sphinx>=8.1.0,<9.0",
 ]
 
 [tool.hatch.envs.types.scripts]
 check = "pyright ."
 stats = "pyright --stats ."
-
-# deck builds: run "hatch run decks:part3"
-# Detached so python-pptx -- a deck-authoring tool, not a package dependency --
-# stays out of the project environment.
-[tool.hatch.envs.decks]
-detached = true
-dependencies = ["python-pptx>=1.0"]
-
-[tool.hatch.envs.decks.scripts]
-part3 = "python internal/deck-tooling/build_js1_part3.py"
 
 [tool.pyright]
 # Setting `exclude` REPLACES pyright's defaults, so the default patterns are
@@ -124,7 +119,8 @@ exclude = [
     "**/__pycache__",
     "**/.*",
     "docs",
-    # Deck-authoring scripts; their python-pptx import is not a project dependency.
+    # The repo has no `internal` tree; the entry stays as a guard, so a
+    # maintainer-only tree of that name, if one is added again, is not type-checked.
     "internal",
 ]
 typeCheckingMode = "standard"
@@ -133,12 +129,21 @@ reportMissingImports = "warning"
 [tool.coverage.run]
 # Only track coverage for our source code, not JITX library internals
 source = ["src"]
-omit = ["dummy", "**/dummy"]
 
 [tool.coverage.report]
-# Ignore errors about missing source files (jitxlib uses "dummy" as the
-# filename for dynamically compiled code from parts database queries)
 ignore_errors = true
 
 [tool.jitx]
-exclude = ["docs", "internal"]
+exclude = ["docs", "internal", "tests"]
+
+# Passive queries (`jitxlib.parts.Resistor`, `Capacitor`, `Inductor`) go to the
+# example catalogue first. `ideal` then synthesizes a non-orderable `IDEAL-*` part:
+# it snaps a single pinned value to E24, honors case (0402 if none is named) and
+# tolerance (1% unless one is pinned), and ignores every other filter, such as a
+# voltage or current rating. It declines a value range, or a query its snapped
+# value, case or tolerance does not meet; those must match a catalogue row. The
+# max_current, self_resonant_frequency, quality_factor and material_core columns
+# are filled only where a datasheet value was checked. A blank cell never matches
+# a query on that column, so in this chain such a query falls through to `ideal`.
+[tool.jitx.parts]
+chain = ["csv:src/jitxexamples/parts/example-passives.csv", "ideal"]

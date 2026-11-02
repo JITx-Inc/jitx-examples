@@ -12,9 +12,10 @@ from jitx.common import Power
 from jitx.component import Component
 from jitx.landpattern import PadMapping
 from jitx.model3d import Model3D
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.primitive import Polyline, Text
 from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F
 from jitxlib.landpatterns.generators.sot import SOT23_5, SOTLeadProfile, T
 from jitxlib.landpatterns.package import RectanglePackage
 from jitxlib.parts import Capacitor
@@ -140,20 +141,20 @@ class TLV314IDBVRCircuit(Circuit):
     INp = Port()
     OUT = Port()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.opamp = TLV314IDBVR()
 
-        self.nets = [
-            self.power.Vp + self.opamp.Vp,
-            self.power.Vn + self.opamp.Vn,
-            self.INn + self.opamp.INn,
-            self.INp + self.opamp.INp,
-            self.OUT + self.opamp.OUT,
-        ]
+        self.Vp = self.power.Vp + self.opamp.Vp
+        self.Vn = self.power.Vn + self.opamp.Vn
+        self.in_n = self.INn + self.opamp.INn
+        self.in_p = self.INp + self.opamp.INp
+        self.out = self.OUT + self.opamp.OUT
 
-        self.byp = Capacitor(capacitance=100e-9).insert(
-            self.opamp.Vp, self.opamp.Vn, short_trace=True
-        )
+        self.byp = Capacitor(capacitance=(100e-9) * F)
+        self.byp_short_traces = [
+            ShortTrace(self.opamp.Vp, self.byp.p1),
+            ShortTrace(self.byp.p2, self.opamp.Vn),
+        ]
 
 
 Device: type[TLV314IDBVRCircuit] = TLV314IDBVRCircuit

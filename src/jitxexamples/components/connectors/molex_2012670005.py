@@ -1,17 +1,20 @@
-from typing import override, Iterable
+"""
+2012670005
+"""
 
-from jitx.landpattern import Landpattern, PadMapping
+from typing import Iterable, override
+
 from jitx.circuit import Circuit
 from jitx.common import DualPair, Power
 from jitx.component import Component
-from jitx.interval import Interval
+from jitx.landpattern import Landpattern, PadMapping
 from jitx.net import DiffPair, Port, Provide, provide
 from jitx.shapes import Shape
 from jitx.shapes.composites import capsule, rectangle
 from jitx.si import TerminatingPinModel
 from jitx.toleranced import Toleranced
 from jitx.transform import Transform
-
+from jitx.units import F, V, ohm
 from jitxlib.landpatterns.courtyard import (
     CourtyardGeneratorMixin,
     ExcessCourtyardGenerator,
@@ -23,17 +26,17 @@ from jitxlib.landpatterns.pads import GridPadShapeGeneratorMixin, SMDPadConfig, 
 from jitxlib.landpatterns.silkscreen.labels import ReferenceDesignatorMixin
 from jitxlib.landpatterns.silkscreen.marker import Pad1Marker
 from jitxlib.landpatterns.silkscreen.outlines import PackageBased, SilkscreenOutline
-from jitxlib.protocols.usb import USB_C_Connector, USB2
-from jitxlib.symbols.box import BoxSymbol, BoxConfig, PinGroup, Row
-
 from jitxlib.parts import (
+    AtLeast,
     Capacitor,
     CapacitorQuery,
+    Minimize,
     Resistor,
     ResistorQuery,
-    SortDir,
-    SortKey,
 )
+from jitxlib.protocols.usb import USB2, USB_C_Connector
+from jitxlib.symbols.box import BoxConfig, BoxSymbol, PinGroup, Row
+
 # from jitxlib.diodes.ESD224DQAR import device as ESD224DQAR_device
 
 
@@ -192,28 +195,26 @@ class USBTypeC(Circuit):
     conn = USB_C_Connector()
     J = USBTypeCComponent()
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-        self.nets = []
-        self.topologies = []
-        self.nets.append(sum(self.J.VBUS, start=self.conn.vbus.Vp))
-        self.nets.append(self.J.CC1 + self.conn.bus.cc[0])
-        self.nets.append(self.J.CC2 + self.conn.bus.cc[1])
-        self.nets.append(self.J.SBU1 + self.conn.bus.sbu[0])
-        self.nets.append(self.J.SBU2 + self.conn.bus.sbu[1])
+        self.VBUS = sum(self.J.VBUS, start=self.conn.vbus.Vp)
+        self.CC1 = self.J.CC1 + self.conn.bus.cc[0]
+        self.CC2 = self.J.CC2 + self.conn.bus.cc[1]
+        self.SBU1 = self.J.SBU1 + self.conn.bus.sbu[0]
+        self.SBU2 = self.J.SBU2 + self.conn.bus.sbu[1]
 
+        # Both D+/D- contact pairs (A6/A7, B6/B7) on the one USB 2.0 pair.
         require_usb = Provide.require(DualPair, self.J)
-        self.topologies.append(self.conn.bus.data >> require_usb.A)
-        self.topologies.append(require_usb.A >> require_usb.B)
+        self.D = self.conn.bus.data + require_usb.A + require_usb.B
 
-        self.topologies.append(self.J.TX1 >> self.conn.bus.lane[0].TX)
-        self.topologies.append(self.J.RX1 >> self.conn.bus.lane[0].RX)
-        self.topologies.append(self.J.TX2 >> self.conn.bus.lane[1].TX)
-        self.topologies.append(self.J.RX2 >> self.conn.bus.lane[1].RX)
+        self.TX1 = self.J.TX1 + self.conn.bus.lane[0].TX
+        self.TX2 = self.J.TX2 + self.conn.bus.lane[1].TX
+        self.RX1 = self.J.RX1 + self.conn.bus.lane[0].RX
+        self.RX2 = self.J.RX2 + self.conn.bus.lane[1].RX
 
-        self.nets.append(sum(self.J.GND, start=self.conn.vbus.Vn))
-        self.nets.append(self.conn.shield + self.J.SHIELD)
+        self.GND = sum(self.J.GND, start=self.conn.vbus.Vn)
+        self.SHIELD = self.conn.shield + self.J.SHIELD
 
 
 class USBC_HighSpeed_Iface(Circuit):
@@ -228,16 +229,21 @@ class USBC_HighSpeed_Iface(Circuit):
     Circuit Includes:
     1.  USB-C connector
     2.  Pull-downs for CC1 and CC2
-    3.  ESD protection diodes for the USB2 data bus.
-    4.  Shield termination
+    3.  Shield termination
+
+    An SI constraint on the data pair names one pad at each end. ``USB``
+    reaches both A6/A7 and B6/B7, so it has no single pad to measure to: end on
+    the connector component's A6/A7 pair, ``USBC.J.D0``. Begin on the MCU
+    component's own pins, not on a circuit port behind series parts, which
+    would leave those parts out of the path.
 
     >>> class USBCircuit(Circuit):
     ...     usb = USBC_HighSpeed_Iface()
-    ...     mcu = MCU()
-    ...     usb_constraint = USB.v2.Constraint()
+    ...     mcu = MCU()  # the MCU component, with a USB2 port named USB
+    ...     usb_constraint = DiffPairConstraint(skew=USB.v2.skew, loss=USB.v2.loss)
     ...     def __init__(self):
-    ...         with self.usb_constraint.constrain_topology(self.mcu.usb, self.usb.USB) as (src, dst):
-    ...             self += src >> dst
+    ...         self.usb_net = self.mcu.USB + self.usb.USB
+    ...         self.usb_constraint.constrain(self.mcu.USB.data, self.usb.USBC.J.D0)
     """
 
     USB = USB2()
@@ -246,38 +252,41 @@ class USBC_HighSpeed_Iface(Circuit):
     GND = Port()
     # esd_prot = ESD224DQAR_device()
 
-    def __init__(self):
+    def __init__(self) -> None:
         rquery = ResistorQuery.require()
         cquery = CapacitorQuery.require()
 
-        self.nets = []
-        self.topologies = []
-        self.nets.append(self.VDD_USB + self.USBC.conn.vbus)
-        self.nets.append(self.GND + self.VDD_USB.Vn)
+        # VBUS is the supply legs only; both returns go on the ground below.
+        self.VBUS = self.VDD_USB.Vp + self.USBC.conn.vbus.Vp
 
-        self.pu_cc1 = Resistor(rquery, resistance=5.1e3)
-        self.nets.append(self.pu_cc1.p1 + self.USBC.conn.bus.cc[0])
-        self.nets.append(self.pu_cc1.p2 + self.GND)
-        self.pu_cc2 = Resistor(rquery, resistance=5.1e3)
-        self.nets.append(self.pu_cc2.p1 + self.USBC.conn.bus.cc[1])
-        self.nets.append(self.pu_cc2.p2 + self.GND)
+        self.pu_cc1 = Resistor(rquery, resistance=(5.1e3) * ohm)
+        self.pu_cc2 = Resistor(rquery, resistance=(5.1e3) * ohm)
+        self.CC1 = self.pu_cc1.p1 + self.USBC.conn.bus.cc[0]
+        self.CC2 = self.pu_cc2.p1 + self.USBC.conn.bus.cc[1]
 
-        self.usb_net = self.USB.data >> self.USBC.conn.bus.data
-        # #self.nets.append(self.GND + self.esd_prot.GND[1] + self.esd_prot.GND[2])
-        # # Construct the topology from the module port, through
-        # #  the ESD protector, and then terminating in the connector device.
-        # esd_pair = Provide.require(DualPair, self.USBC.J)
-        # self.topologies.append(self.USB.data >> esd_pair.A >> esd_pair.B >> self.USBC.conn.bus.data)
-        # # TODO: set "signal end" of USB.data to be USBC.conn.bus.data
+        self.usb_net = self.USB.data + self.USBC.conn.bus.data
 
         # Shield Termination
-        if cquery.rated_voltage is None:
-            cquery = cquery.update(rated_voltage=Interval(lo=50, hi=None))
-            cquery = cquery.update(sort=SortKey("rated_voltage", SortDir.INCREASING))
-        self.sh_term_c = Capacitor(cquery, capacitance=4.7e-9)
-        self.sh_term_r = Resistor(rquery, resistance=0.0)
-        self.nets.append(self.sh_term_c.p1 + self.sh_term_r.p1 + self.USBC.conn.shield)
-        self.nets.append(self.sh_term_c.p2 + self.sh_term_r.p2 + self.GND)
+        voltage_filters = cquery.filters()
+        if not ({"rated_voltage", "rated_voltage_dc"} & voltage_filters.keys()):
+            cquery = cquery.update(
+                rated_voltage_dc=AtLeast(50 * V), rank=Minimize("rated_voltage_dc")
+            )
+        self.sh_term_c = Capacitor(cquery, capacitance=(4.7e-9) * F)
+        self.sh_term_r = Resistor(rquery, resistance=(0.0) * ohm)
+        self.SHIELD = self.sh_term_c.p1 + self.sh_term_r.p1 + self.USBC.conn.shield
+
+        # One ground: the port, both VBUS returns, the CC pull-downs and the
+        # shield termination.
+        self.gnd = (
+            self.GND
+            + self.VDD_USB.Vn
+            + self.USBC.conn.vbus.Vn
+            + self.pu_cc1.p2
+            + self.pu_cc2.p2
+            + self.sh_term_c.p2
+            + self.sh_term_r.p2
+        )
 
 
 class USBTypeCLandpattern(

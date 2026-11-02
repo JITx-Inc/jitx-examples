@@ -37,9 +37,10 @@ list is closed.
 
 * **Dk/Df frequency.** ``Dielectric`` stores bare scalars. The report quotes
   Dk and Df at 10 GHz.
-* **Roughness model.** ``Conductor.roughness`` is one scalar — there is no
-  Huray or Hammerstad selection. The drum-side Rz and any Cannonball-Huray
-  nodule parameters have to live in the EM tool's own stackup override.
+* **Roughness model.** ``Conductor.roughness`` is one scalar, with no Huray
+  or Hammerstad selection. The drum-side Rz is recorded in each foil class's
+  docstring beside the matte Rz; it and any Cannonball-Huray nodule parameters
+  go to the EM exporter or field solver, which takes its own roughness models.
 * **Fill material.** ``Via.filled`` is a boolean. The report distinguishes
   copper-filled microvias from resin-filled mechanical drills; both become
   ``filled = True``.
@@ -56,6 +57,12 @@ list is closed.
   ``RoutingStructure.impedance`` and ``Material.thickness`` are scalars.
 * **Copper weight.** ``Conductor`` has no ``oz`` concept; see the conversions
   above. The nominal weight survives only in the foil-class docstrings.
+* **Neck impedance per geometry.** The report models each neck geometry on
+  its own row, in ``Neck_modelled_Z_ohm``: 60.99 ohm on microstrip and 58.35
+  ohm on stripline for ``Neck_SE``, 111.71 and 106.54 ohm for
+  ``Neck_DIFF_100``. ``RoutingStructure.impedance`` is one scalar, so each
+  neck structure declares its stripline figure, and 60.99 and 111.71 survive
+  only in docstrings.
 
 Layer structure
 ---------------
@@ -84,6 +91,28 @@ indexed. ``0`` is L1 and ``-1`` is L20, so with 20 copper layers::
 Negative indices are used for the bottom half so the mirror symmetry is
 readable at the call site.
 
+Neck regions
+------------
+The IMPEDANCE ``Neck_*`` columns give a narrower geometry for short runs where
+a line has to squeeze through, such as a BGA escape. Each neck geometry is a
+routing structure of its own on its target's layers, carrying the report's
+neck width, pair gap and clearance: ``Neck_SE`` for SE-DEFAULT, SE-40 and
+SE-50, whose rows quote the same neck geometry, and ``Neck_DIFF_100`` for
+DIFF-100. The report quotes a modelled impedance for a neck but no Eps_eff or
+loss, so each neck structure carries its parent row's velocity and loss as a
+labelled default.
+
+A design applies each structure by a tag rule. The parent structure goes on
+its net's tag, a pair included, as in
+``jitxexamples.demos.si_bga_optimization.bga_escape``. A neck structure goes
+on the code-placed ``Route`` that covers the necked span (for a pair, the
+pair's ``Route``), tagged with the design's own ``Tag`` subclass, by a rule
+whose priority sits above the parent's, for example
+``design_constraint(NeckTag(), priority=1).routing_structure(HDISubstrate.Neck_SE, ref_net=self.GND)``.
+No build has confirmed a structure applied by a ``Route`` tag, so that step
+is an open item. ``main.py`` routes nothing, so no structure here, neck or
+parent, is applied yet.
+
 No signal-integrity via models
 ------------------------------
 The vias below carry **no** ``models=`` entry, deliberately. A fab report
@@ -101,10 +130,8 @@ no controlled-impedance structure for, so no routing structure covers them.
 They are reachable only through ``BuriedVia_L6_L15`` and ``THVia_L1_L20``.
 
 Three API ambiguities this file had to resolve
----------------------------------------------
-All three are open questions against the JITX API, tracked under "API findings"
-in ``internal/kits/js1-stackup-components/TODO.md`` along with further findings
-that don't bear on this file's own choices.
+----------------------------------------------
+All three are open questions against the JITX API.
 
 1. **``Conductor.roughness`` has no documented unit.** ``jitxlib.materials``
    uses mm-scale values (``0.003``–``0.005``, i.e. 3–5 µm), and other JITX
@@ -215,9 +242,9 @@ class LaminateCore(Dielectric):
 class OuterCopper(Conductor):
     """CU-OUT — 1/2 oz HVLP-2 base foil plus 18 um panel plating.
 
-    Finished 35.5 um = 0.0355 mm. Rz matte 2.0 um -> roughness 0.0020 mm.
-    L1 and L20. Note this is twice the base-foil weight: plating is why the
-    surface layers are thicker than the inner signal layers.
+    Finished 35.5 um = 0.0355 mm. Rz matte 2.0 um, drum 0.7 um -> roughness
+    0.0020 mm. L1 and L20. Note this is twice the base-foil weight: plating is
+    why the surface layers are thicker than the inner signal layers.
     """
 
     material_name = "HVLP-2 0.5 oz + 18 um plate"
@@ -228,8 +255,8 @@ class OuterCopper(Conductor):
 class SignalCopper(Conductor):
     """CU-SIG — 1/2 oz HVLP-2 foil, unplated.
 
-    Finished 17.5 um = 0.0175 mm. Rz matte 2.0 um -> roughness 0.0020 mm.
-    The eight inner signal layers.
+    Finished 17.5 um = 0.0175 mm. Rz matte 2.0 um, drum 0.7 um -> roughness
+    0.0020 mm. The eight inner signal layers.
     """
 
     material_name = "HVLP-2 0.5 oz"
@@ -240,10 +267,10 @@ class SignalCopper(Conductor):
 class PlaneCopper(Conductor):
     """CU-PLN — 1 oz reverse-treated foil, unplated.
 
-    Finished 35.0 um = 0.0350 mm. Rz matte 6.0 um -> roughness 0.0060 mm.
-    The ten GND planes. Rougher and cheaper than the HVLP-2 signal foil, which
-    is acceptable because plane copper carries return current over a wide area
-    rather than a narrow trace.
+    Finished 35.0 um = 0.0350 mm. Rz matte 6.0 um, drum 3.5 um -> roughness
+    0.0060 mm. The ten GND planes. Rougher and cheaper than the HVLP-2 signal
+    foil, which is acceptable because plane copper carries return current over
+    a wide area rather than a narrow trace.
     """
 
     material_name = "RTF 1 oz"
@@ -427,8 +454,6 @@ def _se_layers(
     clearance: float,
     eps_eff: float,
     insertion_loss: float,
-    neck_width: float | None = None,
-    neck_clearance: float | None = None,
 ) -> dict[int, RoutingStructure.Layer]:
     """Expand one single-ended IMPEDANCE row across its layer group.
 
@@ -436,26 +461,13 @@ def _se_layers(
     Dk: for the coated microstrip rows it already folds in the soldermask, and
     it varies with line width, so there is no single ``(Dk + 1) / 2`` that
     would be right for every structure.
-
-    The neck-down arguments are optional because the report leaves the
-    ``Neck_*`` columns blank on some rows. Omit them there rather than
-    borrowing a neck geometry from a different row.
     """
-    neck = (
-        RoutingStructure.NeckDown(
-            trace_width=neck_width,
-            clearance=neck_clearance,
-        )
-        if neck_width is not None or neck_clearance is not None
-        else None
-    )
     return {
         layer: RoutingStructure.Layer(
             trace_width=width,
             clearance=clearance,
             velocity=phase_velocity(eps_eff),
             insertion_loss=insertion_loss,
-            neck_down=neck,
             # The report names the planes, never their width — the width is the
             # skill's 3x-dielectric-height default, not a CSV value.
         ).reference(dict.fromkeys(REFERENCE_PLANES[layer], REF_PLANE_WIDTH))
@@ -471,9 +483,6 @@ def _diff_layers(
     clearance: float,
     eps_eff: float,
     insertion_loss: float,
-    neck_width: float,
-    neck_gap: float,
-    neck_clearance: float,
 ) -> dict[int, DifferentialRoutingStructure.Layer]:
     """Expand one differential IMPEDANCE row across its layer group.
 
@@ -490,11 +499,6 @@ def _diff_layers(
             clearance=clearance,
             velocity=phase_velocity(eps_eff),
             insertion_loss=insertion_loss,
-            neck_down=DifferentialRoutingStructure.NeckDown(
-                trace_width=neck_width,
-                pair_spacing=neck_gap,
-                clearance=neck_clearance,
-            ),
             # Same skill-default width as `_se_layers` — see REF_PLANE_WIDTH.
         ).reference(dict.fromkeys(REFERENCE_PLANES[layer], REF_PLANE_WIDTH))
         for layer in layers
@@ -507,7 +511,8 @@ def _diff_layers(
 
 
 class HDISubstrate(Substrate):
-    """The stackup, fab rules, 12 via structures and 4 routing structures.
+    """The stackup, fab rules, 12 via structures, 4 routing structures and
+    2 neck-region structures.
 
     Every ``Via`` nested class here is registered on the board automatically —
     the substrate is walked by introspection, and there is no opt-in list. So
@@ -693,8 +698,14 @@ class HDISubstrate(Substrate):
     # assumes — 2x line width single-ended (the 3W rule), 4x differential (5W)
     # — and the impedance only holds where that clearance is met.
     #
-    # Lookup is by exact impedance, so the four nominal values (55, 40, 50,
-    # 100) never collide.
+    # A float or ``Quantity`` lookup matches an impedance exactly, so for those
+    # the four nominal values (55, 40, 50, 100) never collide, with each other
+    # or with the neck structures' 58.35 and 106.54. A ``Toleranced`` lookup
+    # returns the structure in its range whose impedance is closest to its
+    # nominal, so a query near a neck's value returns the neck: 60 or 58 ohm
+    # ±10% returns ``Neck_SE``, and 105 ohm ±5% returns ``Neck_DIFF_100``.
+    # The neck structures follow the four (see "Neck regions" in the module
+    # docstring).
 
     SE_Default = RoutingStructure(
         name="55 ohm general purpose (SE-DEFAULT)",
@@ -706,8 +717,6 @@ class HDISubstrate(Substrate):
                 clearance=0.3682,
                 eps_eff=2.4316,
                 insertion_loss=0.00907,
-                neck_width=0.1500,
-                neck_clearance=0.1500,
             ),
             **_se_layers(
                 STRIPLINE_LAYERS,
@@ -715,8 +724,6 @@ class HDISubstrate(Substrate):
                 clearance=0.1752,
                 eps_eff=2.9600,
                 insertion_loss=0.01367,
-                neck_width=0.0762,
-                neck_clearance=0.0762,
             ),
         },
     )
@@ -724,8 +731,11 @@ class HDISubstrate(Substrate):
     has no specific impedance target.
 
     Note there is no *automatic* default: ``Substrate.routing_structure()``
-    wraps its query in ``Toleranced.exact``, so lookup matches exactly and a
-    design has to ask for ``55 * ohm`` by name.
+    wraps a float or ``Quantity`` query in ``Toleranced.exact``, so that
+    lookup matches exactly and a design has to ask for ``55 * ohm`` by name.
+    A ``Toleranced`` query passes through unchanged and returns the closest
+    structure in its range: for a query centred near 58 ohm that is
+    ``Neck_SE``, not this one.
 
     ACME also quotes a STANDARD default line and space (0.150 mm / 0.150 mm)
     for nets with no impedance target. That geometry is deliberately not
@@ -746,8 +756,6 @@ class HDISubstrate(Substrate):
                 clearance=0.6358,
                 eps_eff=2.5133,
                 insertion_loss=0.00884,
-                neck_width=0.1500,
-                neck_clearance=0.1500,
             ),
             **_se_layers(
                 STRIPLINE_LAYERS,
@@ -755,8 +763,6 @@ class HDISubstrate(Substrate):
                 clearance=0.3244,
                 eps_eff=2.9600,
                 insertion_loss=0.01246,
-                neck_width=0.0762,
-                neck_clearance=0.0762,
             ),
         },
     )
@@ -764,8 +770,9 @@ class HDISubstrate(Substrate):
 
     Note the surface width: 40 ohm over 0.100 mm of Dk-2.96 build-up prepreg
     needs 0.3179 mm (12.5 mil) of copper. That is simply what the geometry
-    gives, and it is why a dense escape on L1 necks down to 0.1500 mm — which
-    is a ~61 ohm line, not a 40 ohm one. Keep necked runs short.
+    gives, and it is why a dense escape on L1 narrows to the 0.1500 mm of
+    ``Neck_SE``, which the report models at 60.99 ohm, not 40. Keep necked runs
+    short.
     """
 
     SE_50 = RoutingStructure(
@@ -778,8 +785,6 @@ class HDISubstrate(Substrate):
                 clearance=0.4386,
                 eps_eff=2.4572,
                 insertion_loss=0.00898,
-                neck_width=0.1500,
-                neck_clearance=0.1500,
             ),
             **_se_layers(
                 STRIPLINE_LAYERS,
@@ -787,8 +792,6 @@ class HDISubstrate(Substrate):
                 clearance=0.2150,
                 eps_eff=2.9600,
                 insertion_loss=0.01326,
-                neck_width=0.0762,
-                neck_clearance=0.0762,
             ),
         },
     )
@@ -805,9 +808,6 @@ class HDISubstrate(Substrate):
                 clearance=0.5944,
                 eps_eff=2.4010,
                 insertion_loss=0.01082,
-                neck_width=0.1000,
-                neck_gap=0.0750,
-                neck_clearance=0.2000,
             ),
             **_diff_layers(
                 STRIPLINE_LAYERS,
@@ -816,17 +816,14 @@ class HDISubstrate(Substrate):
                 clearance=0.3048,
                 eps_eff=2.9600,
                 insertion_loss=0.01579,
-                neck_width=0.0635,
-                neck_gap=0.0635,
-                neck_clearance=0.1270,
             ),
         },
         uncoupled_region=RoutingStructure(
             name="100 ohm differential, uncoupled (DIFF-100-UNC)",
             impedance=58 * ohm,
             layers={
-                # No neck-down: the report leaves the Neck_* columns blank on
-                # the DIFF-100-UNC rows, so there is nothing to transcribe.
+                # The report leaves the Neck_* columns blank on the
+                # DIFF-100-UNC rows, so no neck structure covers this region.
                 # Borrowing the coupled row's neck geometry would be invention.
                 **_se_layers(
                     MICROSTRIP_LAYERS,
@@ -849,10 +846,86 @@ class HDISubstrate(Substrate):
 
     The uncoupled region keeps the coupled line width but each trace now
     behaves as an isolated single-ended line, which the report models at 58.35
-    ohm on stripline and 61.27 ohm on microstrip. It is declared at 58 ohm —
-    the stripline value, since that is where the bulk of the routing runs — and
-    not at half the differential target, because the geometry does not change
-    when the pair splits.
+    ohm on stripline and 61.27 ohm on microstrip. It is declared at 58 ohm,
+    the DIFF-100-UNC rows' target, and not at half the differential target,
+    because the geometry does not change when the pair splits.
+    """
+
+    # --- Neck regions -----------------------------------------------------
+    # Neck_width_mm, Neck_gap_mm and Neck_clearance_mm from the IMPEDANCE rows.
+    # Velocity (from Eps_eff) and loss are the parent row's: a labelled
+    # default, since the report quotes neither for a neck.
+
+    Neck_SE = RoutingStructure(
+        name="neck region (SE-DEFAULT, SE-40, SE-50)",
+        impedance=58.35 * ohm,
+        layers={
+            **_se_layers(
+                MICROSTRIP_LAYERS,
+                width=0.1500,
+                clearance=0.1500,
+                eps_eff=2.4316,  # default: SE-DEFAULT's, not a neck value
+                insertion_loss=0.00907,  # default: SE-DEFAULT's, not a neck value
+            ),
+            **_se_layers(
+                STRIPLINE_LAYERS,
+                width=0.0762,
+                clearance=0.0762,
+                eps_eff=2.9600,  # default: SE-DEFAULT's, not a neck value
+                insertion_loss=0.01367,  # default: SE-DEFAULT's, not a neck value
+            ),
+        },
+    )
+    """Neck region of SE-DEFAULT, SE-40 and SE-50, which quote the same neck
+    geometry, so one structure serves all three.
+
+    The report models this geometry at 58.35 ohm on stripline and 60.99 ohm on
+    microstrip, and gives a neck no target. ``Substrate.routing_structure()``
+    looks structures up by impedance, so the neck cannot carry its parents'
+    targets without colliding with them; it carries a modelled figure instead,
+    the stripline row's 58.35 ohm, labelled as modelled. One value serves here
+    where the STANDARD row's does not (see ``SE_Default``) because the two
+    neck figures are 4.5% apart, while STANDARD's single geometry spans 41.87
+    to 60.99 ohm, 46% apart. Velocity and loss are SE-DEFAULT's, a labelled
+    default.
+
+    A design applies it by tagging the code-placed ``Route`` over the necked
+    span, with a rule at a priority above the parent's net-tag rule (see
+    "Neck regions" in the module docstring). No build has confirmed this.
+    """
+
+    Neck_DIFF_100 = DifferentialRoutingStructure(
+        name="neck region (DIFF-100)",
+        impedance=106.54 * ohm,
+        layers={
+            **_diff_layers(
+                MICROSTRIP_LAYERS,
+                width=0.1000,
+                pair_gap=0.0750,
+                clearance=0.2000,
+                eps_eff=2.4010,  # default: DIFF-100's, not a neck value
+                insertion_loss=0.01082,  # default: DIFF-100's, not a neck value
+            ),
+            **_diff_layers(
+                STRIPLINE_LAYERS,
+                width=0.0635,
+                pair_gap=0.0635,
+                clearance=0.1270,
+                eps_eff=2.9600,  # default: DIFF-100's, not a neck value
+                insertion_loss=0.01579,  # default: DIFF-100's, not a neck value
+            ),
+        },
+    )
+    """Neck region of DIFF-100, gap stated edge to edge.
+
+    The report models this geometry at 106.54 ohm on stripline and 111.71 ohm
+    on microstrip, 4.9% apart. It is declared at 106.54 ohm, the stripline
+    row's modelled figure, labelled, for the reasons given on ``Neck_SE``.
+    Velocity and loss are DIFF-100's, a labelled default.
+
+    A design applies it by tagging the pair's code-placed ``Route`` over the
+    necked span, with a rule at a priority above the ``DRS_100`` rule on the
+    pair's net tag. No build has confirmed this.
     """
 
 

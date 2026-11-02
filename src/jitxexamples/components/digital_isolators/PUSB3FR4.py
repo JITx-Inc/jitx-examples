@@ -1,129 +1,143 @@
+"""Nexperia PUSB3FR4, 4-channel ESD protection for high-speed interfaces.
+
+Source: Nexperia, "PUSB3FR4 ESD protection for ultra high-speed interfaces",
+Product data sheet, 12 July 2018,
+https://assets.nexperia.com/documents/data-sheet/PUSB3FR4.pdf (read from the
+copy LCSC serves for part C294620,
+https://datasheet.lcsc.com/datasheet/pdf/973b1dae6d18992ab9432880e89c8003.pdf?productCode=C294620).
+
+Pinning (Table 1): pin 1 CH1, 2 CH2, 3 GND, 4 CH3, 5 CH4, 8 GND; pins 6, 7, 9
+and 10 are "n.c.", not connected inside the package. Each pin is its own port,
+the n.c. pins as ``NC6``, ``NC7``, ``NC9`` and ``NC10``. The part is a
+"pass-through" design (Section 2, Fig. 15): each channel's trace runs under the
+package across the channel pin and the n.c. pin opposite it (CH1 with 10, CH2
+with 9, CH3 with 7, CH4 with 6). That join is board copper, not part of the
+component, so the circuit using the part nets each pair; there is no internal
+path for a pin model to describe.
+
+The two GND pins are one port: they are the same node inside the package.
+
+Land pattern: the reflow soldering footprint of Fig. 17 (DFN2510A-10,
+SOT1176-1): pitch P 0.5, land width D 0.2, land length C 0.475, inner row gap
+By 0.3, outer extent Ay 1.25, solder resist 0.05 beyond each land, occupied
+area Hx 2.45 by Hy 1.5. Fig. 17 draws solder paste over the whole land.
+Package body 2.5 by 1.0 (Fig. 16, nominal).
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component
+from jitx.feature import Courtyard, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad
-from jitx.layerindex import Side
 from jitx.net import Port
 from jitx.shapes.composites import rectangle
-from jitx.shapes.primitive import Arc, ArcPolyline, Polygon, Polyline, Text
-from jitx.feature import Finish, Paste, Silkscreen, Soldermask
-from jitx.symbol import Direction, Pin, Symbol
-from jitxlib.symbols.box import BoxSymbol, Row, PinGroup
+from jitx.shapes.primitive import Circle, Polyline, Text
+from jitxlib.symbols.box import BoxSymbol, PinGroup, Row
+
+# Fig. 17, reflow soldering footprint, dimensions in mm.
+PITCH = 0.5  # P
+LAND_WIDTH = 0.2  # D
+LAND_LENGTH = 0.475  # C
+ROW_GAP = 0.3  # By, edge to edge between the two rows of lands
+RESIST_MARGIN = 0.05  # solder resist beyond each land edge
+OCCUPIED_X = 2.45  # Hx
+OCCUPIED_Y = 1.5  # Hy
+ROW_Y = (ROW_GAP + LAND_LENGTH) / 2  # 0.3875, land centre from package centre
+
+# Fig. 16, package outline, nominal body.
+BODY_X = 2.5
+BODY_Y = 1.0
 
 
-class RectSMDPad(Pad):
-    rect = rectangle(0.250013, 0.68001)
-    shape = rect
-    layer = Paste(rect)
-    layer = Soldermask(rect)
+class DFNLand(Pad):
+    """One DFN2510A-10 land, Fig. 17."""
 
-
-class C294620(Landpattern):
-    p = {
-        1: RectSMDPad().at(-1.0, -0.434989, on=Side.Top),
-        2: RectSMDPad().at(-0.499873, -0.434989, on=Side.Top),
-        3: RectSMDPad().at(0.0, -0.434989, on=Side.Top),
-        4: RectSMDPad().at(0.500127, -0.434989, on=Side.Top),
-        5: RectSMDPad().at(1.0, -0.434989, on=Side.Top),
-        6: RectSMDPad().at(1.0, 0.434963, on=Side.Top),
-        7: RectSMDPad().at(0.500127, 0.434963, on=Side.Top),
-        8: RectSMDPad().at(0.0, 0.434963, on=Side.Top),
-        9: RectSMDPad().at(-0.499873, 0.434963, on=Side.Top),
-        10: RectSMDPad().at(-1.0, 0.434963, on=Side.Top),
-    }
-
-    ref_text = Silkscreen(Text(">REF", 1.0, Anchor.C).at(0.0, 3.016015))
-    value_text = Finish(Text(">VALUE", 1.0, Anchor.C).at(0.0, -3.016015))
-    ref_alt_text = Finish(Text("REF**", 1.0, Anchor.C).at(0.0, -5.016015))
-
-    silk_lines = [
-        Silkscreen(Polyline(0.254001, [(-1.35997, 1.016015), (-1.359995, -1.015989)])),
-        Silkscreen(Polyline(0.254001, [(-1.359995, -1.015989), (1.359995, -1.015989)])),
-        Silkscreen(Polyline(0.254001, [(1.359995, 1.016015), (1.359995, -1.016015)])),
-        Silkscreen(Polyline(0.254001, [(-1.35997, 1.016015), (1.359995, 1.016015)])),
-    ]
-
-    silk_arcs = [
-        Silkscreen(
-            ArcPolyline(0.059995, [Arc((-1.250013, -0.500368), 0.029998, 0.0, 360.0)])
-        ),
-        Silkscreen(
-            ArcPolyline(
-                0.254001, [Arc((-1.016002, -1.397142), 0.0635000000000001, 0.0, 360.0)]
-            )
-        ),
-    ]
-
-    finish_arc = Finish(
-        ArcPolyline(0.2, [Arc((-1.016002, -0.508014), 0.1, 0.0, 360.0)])
+    shape = rectangle(LAND_WIDTH, LAND_LENGTH)
+    paste = Paste(rectangle(LAND_WIDTH, LAND_LENGTH))
+    soldermask = Soldermask(
+        rectangle(LAND_WIDTH + 2 * RESIST_MARGIN, LAND_LENGTH + 2 * RESIST_MARGIN)
     )
 
-    # model = Model3D(
-    #    "../../3d-models/C294620.wrl",
-    #    position=(0, 0, 0),
-    #    scale=(1, 1, 1),
-    #    rotation=(0, 0, -270)
-    # )
 
+class DFN2510A10(Landpattern):
+    """DFN2510A-10 (SOT1176-1) land pattern, top view as in Table 1: pins 1 to 5
+    along the bottom row from left to right, pins 6 to 10 along the top row
+    from right to left, so pin 10 sits opposite pin 1."""
 
-class PUSB3FR4_Symbol(Symbol):
-    pin_name_size = 0.6
-    pad_name_size = 0.6
-
-    CH1 = Pin(at=(-3, -3), direction=Direction.Left, length=1)
-    nc0 = Pin(at=(3, -3), direction=Direction.Right, length=1)
-    CH2 = Pin(at=(-3, -4), direction=Direction.Left, length=1)
-    GND0 = Pin(at=(-3, -5), direction=Direction.Left, length=1)
-    CH3 = Pin(at=(-3, -6), direction=Direction.Left, length=1)
-    CH4 = Pin(at=(-3, -7), direction=Direction.Left, length=1)
-    nc3 = Pin(at=(3, -7), direction=Direction.Right, length=1)
-    nc2 = Pin(at=(3, -6), direction=Direction.Right, length=1)
-    GND1 = Pin(at=(3, -5), direction=Direction.Right, length=1)
-    nc1 = Pin(at=(3, -4), direction=Direction.Right, length=1)
-
-    ref_text = Text(">REF", 1.27, Anchor.C).at(0.0, 1.27)
-    value_text = Text(">VALUE", 1.27, Anchor.C).at(0.0, -2.54)
-
-    component_box = Polygon(
-        [(3.0, -2.0), (-3.0, -2.0), (-3.0, -8.0), (3.0, -8.0), (3.0, -2.0)]
-    )
-    pin1_indicator = Polygon(
-        [(-2.5, -2.5), (-2.35, -2.5), (-2.35, -2.35), (-2.5, -2.35), (-2.5, -2.5)]
-    )
+    def __init__(self) -> None:
+        self.p = {
+            n: DFNLand().at(x, y)
+            for n, (x, y) in {
+                **{i + 1: (-2 * PITCH + i * PITCH, -ROW_Y) for i in range(5)},
+                **{10 - i: (-2 * PITCH + i * PITCH, ROW_Y) for i in range(5)},
+            }.items()
+        }
+        # Fig. 17's occupied area, widened where the body (Fig. 16) is wider.
+        self.courtyard = Courtyard(
+            rectangle(max(OCCUPIED_X, BODY_X), max(OCCUPIED_Y, BODY_Y))
+        )
+        # Silkscreen only off the lands: the two short ends and a pin 1 dot.
+        sx = BODY_X / 2 + 0.1
+        sy = BODY_Y / 2
+        self.silkscreen = [
+            Silkscreen(Polyline(0.1, [(-sx, -sy), (-sx, sy)])),
+            Silkscreen(Polyline(0.1, [(sx, -sy), (sx, sy)])),
+            Silkscreen(Circle(radius=0.08).at(-sx - 0.2, -ROW_Y)),
+        ]
+        self.ref_text = Silkscreen(Text(">REF", 0.5, Anchor.C).at(0.0, 1.2))
 
 
 class PUSB3FR4(Component):
-    """System-level ESD protection for USB"""
+    """Nexperia PUSB3FR4 4-channel ESD protection, DFN2510A-10.
 
+    For the pass-through layout, net each channel to the n.c. pin opposite it;
+    see the module docstring."""
+
+    manufacturer = "Nexperia"
     mpn = "PUSB3FR4"
     reference_designator_prefix = "U"
+    datasheet = "https://assets.nexperia.com/documents/data-sheet/PUSB3FR4.pdf"
 
     CH1 = Port()
     CH2 = Port()
     GND = Port()
     CH3 = Port()
     CH4 = Port()
+    NC6 = Port()
+    """n.c., opposite CH4."""
+    NC7 = Port()
+    """n.c., opposite CH3."""
+    NC9 = Port()
+    """n.c., opposite CH2."""
+    NC10 = Port()
+    """n.c., opposite CH1."""
 
-    landpattern = C294620()
-    symbol = BoxSymbol(rows=[Row(left=[PinGroup([CH1, CH2, GND, CH3, CH4])])])
-    # Pin mappings based on the pin-properties from the original Stanza file
-
-    mappings = [
-        PadMapping(
-            {
-                CH1: [landpattern.p[1], landpattern.p[10]],
-                CH2: [landpattern.p[2], landpattern.p[9]],
-                GND: [landpattern.p[3], landpattern.p[8]],
-                CH3: [landpattern.p[4], landpattern.p[7]],
-                CH4: [landpattern.p[5], landpattern.p[6]],
-            }
-        ),
-    ]
-
-    # Property for datasheet URL
-    datasheet = (
-        "https://datasheet.lcsc.com/lcsc/1810081417_Nexperia-PUSB3FR4_C294620.pdf"
-    )
+    def __init__(self) -> None:
+        self.landpattern = DFN2510A10()
+        self.symbol = BoxSymbol(
+            rows=[
+                Row(
+                    left=[PinGroup([self.CH1, self.CH2, self.GND, self.CH3, self.CH4])],
+                    right=[PinGroup([self.NC10, self.NC9, self.NC7, self.NC6])],
+                )
+            ]
+        )
+        lp = self.landpattern
+        self.mappings = [
+            PadMapping(
+                {
+                    self.CH1: lp.p[1],
+                    self.CH2: lp.p[2],
+                    self.GND: [lp.p[3], lp.p[8]],
+                    self.CH3: lp.p[4],
+                    self.CH4: lp.p[5],
+                    self.NC6: lp.p[6],
+                    self.NC7: lp.p[7],
+                    self.NC9: lp.p[9],
+                    self.NC10: lp.p[10],
+                }
+            ),
+        ]
 
 
 Device: type[PUSB3FR4] = PUSB3FR4

@@ -1,20 +1,26 @@
+"""
+VL53L0CXV0DH_1
+"""
+
+from dataclasses import dataclass
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
-from jitx.component import Component
 from jitx.circuit import Circuit
+from jitx.common import Power
+from jitx.component import Component
+from jitx.feature import Finish, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad
 from jitx.layerindex import Side
 from jitx.net import Port
+from jitx.property import Property
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Polyline, Text
-from jitx.feature import Finish, Paste, Silkscreen, Soldermask
-from jitxlib.protocols.serial import I2C
-from jitxlib.symbols.box import BoxSymbol, Row, PinGroup
 from jitx.si import Toleranced
-from jitx.property import Property
-from dataclasses import dataclass
-from jitxlib.parts.query_api import Capacitor
-from jitx.common import Power
+from jitx.units import F
+from jitxlib.parts import Capacitor
+from jitxlib.protocols.serial import I2C
+from jitxlib.symbols.box import BoxSymbol, PinGroup, Row
 
 
 class RectSMDPad1(Pad):
@@ -172,13 +178,13 @@ class VL53L0CXV0DH_1(Circuit):
     # Bypass capacitors
     vdd_bypass = Capacitor(
         # description="VDD bypass capacitor",
-        capacitance=4.7e-6,  # 4.7µF
+        capacitance=(4.7e-6) * F,  # 4.7µF
         case="0603",
     )
 
     avdd_bypass = Capacitor(
         # description="AVDD bypass capacitor",
-        capacitance=0.1e-6,  # 0.1µF
+        capacitance=(0.1e-6) * F,  # 0.1µF
         case="0603",
     )
 

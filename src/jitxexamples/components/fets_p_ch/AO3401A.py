@@ -1,3 +1,7 @@
+"""
+AO3401A
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component
@@ -44,9 +48,9 @@ class AO3401A(Component):
     Key Specifications:
     - Drain-Source Voltage (Vdss): -30V
     - Continuous Drain Current (Id): -4A
-    - On-Resistance (Rds): 44mΩ @ Vgs=-10V, Id=-4.3A
+    - On-Resistance (Rds): 41mΩ typical, 50mΩ max @ Vgs=-10V, Id=-4.0A
     - Power Dissipation: 1.4W
-    - Gate Threshold Voltage: -1.3V @ 250µA
+    - Gate Threshold Voltage: -0.5V min, -0.9V typical, -1.3V max @ 250µA
     - Package: SOT-23-3
 
     Pin Configuration:

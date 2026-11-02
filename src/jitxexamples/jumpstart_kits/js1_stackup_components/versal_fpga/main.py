@@ -1,6 +1,6 @@
 """Buildable smoke designs for the VP1002 reference solution.
 
-Two deliberately minimal ``SampleDesign``s:
+Two deliberately minimal ``SampleDesign`` subclasses:
 
 * ``VersalFPGADesign`` — the bare component. One schematic page per
   generated ``BoxSymbol`` (one per bank / GT quad / rail chunk), which is
@@ -14,8 +14,7 @@ Two deliberately minimal ``SampleDesign``s:
 
 Build (runtime required)::
 
-    jitx design build jitxexamples.jumpstart_kits.js1_stackup_components.\\
-versal_fpga.main.VersalFPGADesign
+    jitx design build jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main.VersalFPGADesign
 """
 
 from jitx import Circuit

@@ -1,11 +1,11 @@
-.. jitxlib.components documentation master file
+.. jitxexamples documentation master file
 
-jitxlib.components documentation
-================================
+jitxexamples documentation
+==========================
 
 
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
 
-   jitxlib/components/modules
+   jitxexamples/components/modules

@@ -1,3 +1,7 @@
+"""
+AO6409
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component as JITXComponent
@@ -71,7 +75,7 @@ class Component(JITXComponent):
     manufacturer = "Alpha & Omega Semicon"
     mpn = "AO6409"
     reference_designator_prefix = "Q"
-    datasheet = "https://www.lcsc.com/datasheet/lcsc_datasheet_1809192121_Alpha---Omega-Semicon-AO6409_C115833.pdf"
+    datasheet = "https://www.aosmd.com/res/data_sheets/AO6409.pdf"
     D0 = Port()
     D1 = Port()
     G = Port()

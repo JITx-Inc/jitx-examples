@@ -1,4 +1,4 @@
-"""JS1 Part 3 — tests for the Versal VP1002 reference solution.
+"""JS1 Part 2: tests for the Versal VP1002 reference solution.
 
 Offline invariants for the generated component and the circuit wrapper.
 Group-count and spot-check literals are transcribed from the generator's
@@ -11,21 +11,23 @@ var, or ``.context/versal_vp1002/`` found by walking up from this file).
 
 import hashlib
 import os
+import subprocess
+import sys
 from functools import cache
 from pathlib import Path
 
 # `package_design` is private; jitx.test.TestCase supplies the instantiation
-# context but exposes no public translate entry point. Logged under "API
-# findings" in internal/kits/js1-stackup-components/TODO.md.
+# context but exposes no public translate entry point.
 from jitx._translate.design import package_design
 from jitx.common import Power
 from jitx.inspect import extract
 from jitx.landpattern import Pad
-from jitx.net import Port
+from jitx.net import Net, Port
 from jitx.test import TestCase
 
 from jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.circuit import (
     GroundDomain,
+    XCVP1002Circuit,
 )
 from jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main import (
     VersalFPGACircuitDesign,
@@ -40,6 +42,7 @@ from jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.tools import
 from jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.xcvp1002 import (
     PINOUT_SHA256,
     TOTAL_BALLS,
+    XCVP1002,
 )
 
 #: Rail sizes from the generator's inventory report (AMD pinout ground truth).
@@ -94,12 +97,53 @@ def circuit_design() -> VersalFPGACircuitDesign:
     return VersalFPGACircuitDesign()
 
 
+def gtm_nets(circ: XCVP1002Circuit) -> list[Net]:
+    """Every GTM net, from the circuit's per-role fields."""
+    roles = (
+        circ.GTM_TXP,
+        circ.GTM_TXN,
+        circ.GTM_RXP,
+        circ.GTM_RXN,
+        circ.GTM_REFCLKP,
+        circ.GTM_REFCLKN,
+    )
+    return [net for role in roles for quad in role for net in quad]
+
+
 def _mapped_pads(mapping, port: Port) -> list:
     """Narrow PadMapping's ``Pad | Sequence[Pad]`` lookup to the list form."""
     pads = mapping[port]
     if not isinstance(pads, list):
         raise AssertionError(f"expected a list of pads for {port}")
     return pads
+
+
+#: Imports the generator with jitx (and jitxlib) unimportable. Run in a
+#: subprocess because this test process has already imported jitx.
+_NO_JITX_PROBE = """
+import sys
+
+
+class _Blocked:
+    def find_spec(self, name, path=None, target=None):
+        if name in ("jitx", "jitxlib") or name.startswith(("jitx.", "jitxlib.")):
+            raise ImportError(name + " is blocked: the generator must not need it")
+        return None
+
+
+sys.meta_path.insert(0, _Blocked())
+
+import importlib
+
+importlib.import_module(
+    "jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga"
+    ".tools.generate_pinout"
+)
+# Not redundant with the blocker above: a .pth file or sitecustomize can
+# import jitx before this code runs, in which case `import jitx` inside the
+# package is served from sys.modules and never reaches find_spec.
+assert "jitx" not in sys.modules, "jitx was already imported at startup"
+"""
 
 
 def _find_pinout_file() -> Path | None:
@@ -261,6 +305,38 @@ class TestGenerator(TestCase):
         ]
     )
 
+    def test_runs_without_jitx(self):
+        # `python -m ...tools.generate_pinout` imports every parent package on
+        # the way to the tool, so an eager re-export in versal_fpga/__init__.py
+        # makes the documented command need a jitx install -- which the
+        # stdlib-only generator is written to do without. This seals the chain.
+        proc = subprocess.run(
+            [sys.executable, "-c", _NO_JITX_PROBE],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(
+            proc.returncode,
+            0,
+            "importing the generator pulled in jitx; keep the re-exports in "
+            f"versal_fpga/__init__.py lazy.\n{proc.stderr}",
+        )
+
+    def test_lazy_re_exports_match_eager_ones(self):
+        # The laziness must not be visible to callers: dir() and `import *`
+        # both read __all__/__dir__, not the module __dict__, so dropping
+        # __dir__ would quietly shrink the package's public surface.
+        from jitxexamples.jumpstart_kits.js1_stackup_components import versal_fpga
+
+        listed = set(dir(versal_fpga))
+        self.assertLessEqual(set(versal_fpga.__all__), listed)
+        # __dir__ must widen the module globals, not replace them.
+        self.assertIn("__file__", listed)
+        self.assertIs(versal_fpga.XCVP1002, XCVP1002)
+        with self.assertRaises(AttributeError):
+            versal_fpga.NoSuchName  # noqa: B018
+
     def test_box_cap_stays_in_sync(self):
         # The stdlib-only generator restates symbols.MAX_PINS_PER_BOX; the
         # owner enforces it at instantiation, this seals the two constants.
@@ -356,11 +432,11 @@ class TestCircuit(TestCase):
         for quad in circ.gtm.values():
             self.assertEqual(len(quad.L), 4)
             self.assertEqual(len(quad.REFCLK), 2)
-        # 6 quads x (4 lanes x 4 signals + 2 refclks x 2) topology segments
-        self.assertEqual(len(circ.gtm_links), 6 * (4 * 4 + 2 * 2))
+        # 6 quads x (4 lanes x 4 signals + 2 refclks x 2) nets
+        self.assertEqual(len(gtm_nets(circ)), 6 * (4 * 4 + 2 * 2))
 
-    def test_gtm_link_endpoints(self):
-        """Every link joins the expected bundle sub-port to the expected ball.
+    def test_gtm_net_endpoints(self):
+        """Every net joins the expected bundle sub-port to the expected ball.
 
         The count above passes a lane- or polarity-swapped wiring; this does
         not. Expected pairs come from the generated ``gtm_quad_pins()`` roster
@@ -379,16 +455,35 @@ class TestCircuit(TestCase):
             for i, refclk in enumerate(quad.REFCLK):
                 expected[id(refclk.p)] = (bank, "REFCLK.p", i, pins.refclkp[i])
                 expected[id(refclk.n)] = (bank, "REFCLK.n", i, pins.refclkn[i])
-        self.assertEqual(len(expected), len(circ.gtm_links))
+        self.assertEqual(len(expected), len(gtm_nets(circ)))
         seen = set()
-        for link in circ.gtm_links:
-            bundle_port, ball_port = link.sequence
+        for net in gtm_nets(circ):
+            bundle_port, ball_port = net.connected
             self.assertIn(id(bundle_port), expected)
             bank, label, index, pin = expected[id(bundle_port)]
             with self.subTest(bank=bank, port=label, index=index):
                 self.assertIs(ball_port, pin)
             seen.add(id(bundle_port))
         self.assertEqual(len(seen), len(expected))
+
+    def test_gtm_role_fields_follow_bank_and_lane(self) -> None:
+        """GTM_TXP[0][1] is lane 1 of bank 202: its TX.p and ball GTM_TXP1_202.
+
+        The endpoint test above passes if the TXP and TXN fields trade nets;
+        this pins one entry of each to its datasheet ball.
+        """
+        circ = circuit_design().circuit.fpga_circuit
+        assert isinstance(circ, XCVP1002Circuit)
+        lane = circ.gtm[202].L[1]
+        cases = [
+            ("GTM_TXP", circ.GTM_TXP[0][1], lane.TX.p, circ.fpga.GTM_TXP1_202),
+            ("GTM_TXN", circ.GTM_TXN[0][1], lane.TX.n, circ.fpga.GTM_TXN1_202),
+        ]
+        for field, net, bundle_port, ball in cases:
+            with self.subTest(field=field):
+                self.assertEqual(
+                    {id(p) for p in net.connected}, {id(bundle_port), id(ball)}
+                )
 
     def test_circuit_design_translates(self):
         packaged = package_design(circuit_design())

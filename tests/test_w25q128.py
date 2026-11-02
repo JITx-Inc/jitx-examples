@@ -1,15 +1,15 @@
 from jitx.container import inline
 from jitx.test import TestCase
 from jitx.circuit import Circuit
-from jitx.sample import SampleDesign
-from jitxlib.parts.query_api import CapacitorQuery, ResistorQuery
+from tests.parts import PartsTestDesign
+from jitxlib.parts import CapacitorQuery, ResistorQuery
 
 from jitxexamples.components.flash.winbond_W25Q128JVSIQ import (
     Device as W25Q128Device,
 )
 
 
-class W25Q128Design(SampleDesign):
+class W25Q128Design(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 

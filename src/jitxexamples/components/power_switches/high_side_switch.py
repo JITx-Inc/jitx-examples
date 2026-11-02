@@ -1,7 +1,13 @@
+"""
+HighSideSwitch
+"""
+
 from jitx.circuit import Circuit
-from jitx.net import Port
 from jitx.common import Power
-from jitxlib.parts.query_api import Resistor
+from jitx.net import Port
+from jitx.units import ohm, pct
+from jitxlib.parts import AtMost, Resistor
+
 from ..bjts.BJT_2N3904S_RTKPS import Component as BJT_Component
 from ..fets_p_ch.AO6409 import Component as FET_Component
 
@@ -26,19 +32,19 @@ class HighSideSwitch(Circuit):
         power.Vp + VDD,
     ]
 
-    # Input resistor (1kΩ, 1% tolerance)
+    # Input resistor (1kΩ, 1% tolerance or tighter)
     r_input = Resistor(
         # description="Input resistor",
-        resistance=1000.0,  # 1kΩ
-        tolerance=0.01,  # 1%
+        resistance=(1000.0) * ohm,  # 1kΩ
+        tolerance=AtMost(1.0 * pct),  # 1% or tighter
         case="0603",
     )
 
-    # Internal resistor (10kΩ, 1% tolerance)
+    # Internal resistor (10kΩ, 1% tolerance or tighter)
     r_int = Resistor(
         # description="Internal resistor",
-        resistance=10000.0,  # 10kΩ
-        tolerance=0.01,  # 1%
+        resistance=(10000.0) * ohm,  # 10kΩ
+        tolerance=AtMost(1.0 * pct),  # 1% or tighter
         case="0603",
     )
 

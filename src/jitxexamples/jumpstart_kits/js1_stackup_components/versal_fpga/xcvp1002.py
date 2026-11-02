@@ -8,9 +8,11 @@ Ground truth
       sha256 ``f02a21966623596a...`` of the newline-
       normalized text), downloaded from
       https://www.amd.com/en/developer/resources/adaptive-socs-and-fpgas/package-pinout-files/versal-package-device-pinout-files.html
-      File header identification lines:
-    Device            : xcvp1002nfvi1369
-    Date              : Mon Oct 16 17:52:52 2023
+      File header identification lines::
+
+        Device            : xcvp1002nfvi1369
+        Date              : Mon Oct 16 17:52:52 2023
+
     * AM013 "Package Dimensions for NFVI1369" (mechanical) and
       "BGA Package Design Rules" (PCB land rules), via
       ``.landpattern`` -- cited by caption because AM013
@@ -32,6 +34,8 @@ The ordering-code suffix (speed/temperature grade) is omitted from
 """
 
 from collections.abc import Iterator
+from dataclasses import dataclass
+from enum import Enum
 
 import jitx
 from jitx.net import Port
@@ -42,6 +46,29 @@ from .symbols import SymbolPartition, build_pad_mapping, build_symbols
 
 PINOUT_SHA256 = "f02a21966623596a7b38a5e658a2a602053e2be5342831aa6f2acda82a856b04"
 TOTAL_BALLS = 1369
+
+
+class DDRMC(Enum):
+    """The "DDRMC Only" column of the pin file, for an XPIO pin.
+
+    Defined in AM013 "About ASCII Package Files". NO does not exclude a
+    pin from DDR memory use: it means the pin also has full access to
+    I/O logic resources."""
+
+    YES = "YES"
+    "DDR memory applications only; no full access to I/O logic"
+    YES_PLUS_GC = "YES_PLUS_GC"
+    "DDR memory applications, with full access to clock management"
+    NO = "NO"
+    "Full access to I/O logic resources"
+
+
+@dataclass(frozen=True)
+class TripletPin:
+    """One XPIO pin of a DDRMC triplet and its DDRMC column value."""
+
+    port: Port
+    ddrmc: DDRMC
 
 
 class XCVP1002(jitx.Component):
@@ -1242,6 +1269,178 @@ class XCVP1002(jitx.Component):
                 ),
             ),
         }
+
+    def xpio_triplet_pins(self) -> dict[int, tuple[TripletPin, ...]]:
+        """XPIO pins of each DDRMC triplet, keyed by triplet number.
+
+        Tuple index ``i`` is pin ``MxPi`` of the pin file: bank ``i // 54``
+        of the triplet, nibble ``i % 54 // 6``, pin ``i % 6``.
+        """
+        m0 = (  # banks 700/701/702
+            TripletPin(self.IO_L0P_XCC_N0P0_M0P0_700, DDRMC.YES),
+            TripletPin(self.IO_L0N_XCC_N0P1_M0P1_700, DDRMC.YES),
+            TripletPin(self.IO_L1P_N0P2_M0P2_700, DDRMC.YES),
+            TripletPin(self.IO_L1N_N0P3_M0P3_700, DDRMC.YES),
+            TripletPin(self.IO_L2P_N0P4_M0P4_700, DDRMC.YES),
+            TripletPin(self.IO_L2N_N0P5_M0P5_700, DDRMC.YES),
+            TripletPin(self.IO_L3P_XCC_N1P0_M0P6_700, DDRMC.YES),
+            TripletPin(self.IO_L3N_XCC_N1P1_M0P7_700, DDRMC.YES),
+            TripletPin(self.IO_L4P_N1P2_M0P8_700, DDRMC.YES),
+            TripletPin(self.IO_L4N_N1P3_M0P9_700, DDRMC.YES),
+            TripletPin(self.IO_L5P_N1P4_M0P10_700, DDRMC.YES),
+            TripletPin(self.IO_L5N_N1P5_M0P11_700, DDRMC.YES),
+            TripletPin(self.IO_L6P_GC_XCC_N2P0_M0P12_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L6N_GC_XCC_N2P1_M0P13_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L7P_N2P2_M0P14_700, DDRMC.YES),
+            TripletPin(self.IO_L7N_N2P3_M0P15_700, DDRMC.YES),
+            TripletPin(self.IO_L8P_N2P4_M0P16_700, DDRMC.YES),
+            TripletPin(self.IO_L8N_N2P5_M0P17_700, DDRMC.YES),
+            TripletPin(self.IO_L9P_GC_XCC_N3P0_M0P18_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L9N_GC_XCC_N3P1_M0P19_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L10P_N3P2_M0P20_700, DDRMC.YES),
+            TripletPin(self.IO_L10N_N3P3_M0P21_700, DDRMC.YES),
+            TripletPin(self.IO_L11P_N3P4_M0P22_700, DDRMC.YES),
+            TripletPin(self.IO_L11N_N3P5_M0P23_700, DDRMC.YES),
+            TripletPin(self.IO_L12P_GC_XCC_N4P0_M0P24_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L12N_GC_XCC_N4P1_M0P25_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L13P_N4P2_M0P26_700, DDRMC.YES),
+            TripletPin(self.IO_L13N_N4P3_M0P27_700, DDRMC.YES),
+            TripletPin(self.IO_L14P_N4P4_M0P28_700, DDRMC.YES),
+            TripletPin(self.IO_L14N_N4P5_M0P29_700, DDRMC.YES),
+            TripletPin(self.IO_L15P_XCC_N5P0_M0P30_700, DDRMC.YES),
+            TripletPin(self.IO_L15N_XCC_N5P1_M0P31_700, DDRMC.YES),
+            TripletPin(self.IO_L16P_N5P2_M0P32_700, DDRMC.YES),
+            TripletPin(self.IO_L16N_N5P3_M0P33_700, DDRMC.YES),
+            TripletPin(self.IO_L17P_N5P4_M0P34_700, DDRMC.YES),
+            TripletPin(self.IO_L17N_N5P5_M0P35_700, DDRMC.YES),
+            TripletPin(self.IO_L18P_XCC_N6P0_M0P36_700, DDRMC.YES),
+            TripletPin(self.IO_L18N_XCC_N6P1_M0P37_700, DDRMC.YES),
+            TripletPin(self.IO_L19P_N6P2_M0P38_700, DDRMC.YES),
+            TripletPin(self.IO_L19N_N6P3_M0P39_700, DDRMC.YES),
+            TripletPin(self.IO_L20P_N6P4_M0P40_700, DDRMC.YES),
+            TripletPin(self.IO_L20N_N6P5_M0P41_700, DDRMC.YES),
+            TripletPin(self.IO_L21P_XCC_N7P0_M0P42_700, DDRMC.YES),
+            TripletPin(self.IO_L21N_XCC_N7P1_M0P43_700, DDRMC.YES),
+            TripletPin(self.IO_L22P_N7P2_M0P44_700, DDRMC.YES),
+            TripletPin(self.IO_L22N_N7P3_M0P45_700, DDRMC.YES),
+            TripletPin(self.IO_L23P_N7P4_M0P46_700, DDRMC.YES),
+            TripletPin(self.IO_L23N_N7P5_M0P47_700, DDRMC.YES),
+            TripletPin(self.IO_L24P_GC_XCC_N8P0_M0P48_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L24N_GC_XCC_N8P1_M0P49_700, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L25P_N8P2_M0P50_700, DDRMC.YES),
+            TripletPin(self.IO_L25N_N8P3_M0P51_700, DDRMC.YES),
+            TripletPin(self.IO_L26P_N8P4_M0P52_700, DDRMC.YES),
+            TripletPin(self.IO_L26N_N8P5_M0P53_700, DDRMC.YES),
+            TripletPin(self.IO_L0P_XCC_N0P0_M0P54_701, DDRMC.YES),
+            TripletPin(self.IO_L0N_XCC_N0P1_M0P55_701, DDRMC.YES),
+            TripletPin(self.IO_L1P_N0P2_M0P56_701, DDRMC.YES),
+            TripletPin(self.IO_L1N_N0P3_M0P57_701, DDRMC.YES),
+            TripletPin(self.IO_L2P_N0P4_M0P58_701, DDRMC.YES),
+            TripletPin(self.IO_L2N_N0P5_M0P59_701, DDRMC.YES),
+            TripletPin(self.IO_L3P_XCC_N1P0_M0P60_701, DDRMC.YES),
+            TripletPin(self.IO_L3N_XCC_N1P1_M0P61_701, DDRMC.YES),
+            TripletPin(self.IO_L4P_N1P2_M0P62_701, DDRMC.YES),
+            TripletPin(self.IO_L4N_N1P3_M0P63_701, DDRMC.YES),
+            TripletPin(self.IO_L5P_N1P4_M0P64_701, DDRMC.YES),
+            TripletPin(self.IO_L5N_N1P5_M0P65_701, DDRMC.YES),
+            TripletPin(self.IO_L6P_GC_XCC_N2P0_M0P66_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L6N_GC_XCC_N2P1_M0P67_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L7P_N2P2_M0P68_701, DDRMC.YES),
+            TripletPin(self.IO_L7N_N2P3_M0P69_701, DDRMC.YES),
+            TripletPin(self.IO_L8P_N2P4_M0P70_701, DDRMC.YES),
+            TripletPin(self.IO_L8N_N2P5_M0P71_701, DDRMC.YES),
+            TripletPin(self.IO_L9P_GC_XCC_N3P0_M0P72_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L9N_GC_XCC_N3P1_M0P73_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L10P_N3P2_M0P74_701, DDRMC.YES),
+            TripletPin(self.IO_L10N_N3P3_M0P75_701, DDRMC.YES),
+            TripletPin(self.IO_L11P_N3P4_M0P76_701, DDRMC.YES),
+            TripletPin(self.IO_L11N_N3P5_M0P77_701, DDRMC.YES),
+            TripletPin(self.IO_L12P_GC_XCC_N4P0_M0P78_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L12N_GC_XCC_N4P1_M0P79_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L13P_N4P2_M0P80_701, DDRMC.YES),
+            TripletPin(self.IO_L13N_N4P3_M0P81_701, DDRMC.YES),
+            TripletPin(self.IO_L14P_N4P4_M0P82_701, DDRMC.YES),
+            TripletPin(self.IO_L14N_N4P5_M0P83_701, DDRMC.YES),
+            TripletPin(self.IO_L15P_XCC_N5P0_M0P84_701, DDRMC.YES),
+            TripletPin(self.IO_L15N_XCC_N5P1_M0P85_701, DDRMC.YES),
+            TripletPin(self.IO_L16P_N5P2_M0P86_701, DDRMC.YES),
+            TripletPin(self.IO_L16N_N5P3_M0P87_701, DDRMC.YES),
+            TripletPin(self.IO_L17P_N5P4_M0P88_701, DDRMC.YES),
+            TripletPin(self.IO_L17N_N5P5_M0P89_701, DDRMC.YES),
+            TripletPin(self.IO_L18P_XCC_N6P0_M0P90_701, DDRMC.YES),
+            TripletPin(self.IO_L18N_XCC_N6P1_M0P91_701, DDRMC.YES),
+            TripletPin(self.IO_L19P_N6P2_M0P92_701, DDRMC.YES),
+            TripletPin(self.IO_L19N_N6P3_M0P93_701, DDRMC.YES),
+            TripletPin(self.IO_L20P_N6P4_M0P94_701, DDRMC.YES),
+            TripletPin(self.IO_L20N_N6P5_M0P95_701, DDRMC.YES),
+            TripletPin(self.IO_L21P_XCC_N7P0_M0P96_701, DDRMC.YES),
+            TripletPin(self.IO_L21N_XCC_N7P1_M0P97_701, DDRMC.YES),
+            TripletPin(self.IO_L22P_N7P2_M0P98_701, DDRMC.YES),
+            TripletPin(self.IO_L22N_N7P3_M0P99_701, DDRMC.YES),
+            TripletPin(self.IO_L23P_N7P4_M0P100_701, DDRMC.YES),
+            TripletPin(self.IO_L23N_N7P5_M0P101_701, DDRMC.YES),
+            TripletPin(self.IO_L24P_GC_XCC_N8P0_M0P102_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L24N_GC_XCC_N8P1_M0P103_701, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L25P_N8P2_M0P104_701, DDRMC.YES),
+            TripletPin(self.IO_L25N_N8P3_M0P105_701, DDRMC.YES),
+            TripletPin(self.IO_L26P_N8P4_M0P106_701, DDRMC.YES),
+            TripletPin(self.IO_L26N_N8P5_M0P107_701, DDRMC.YES),
+            TripletPin(self.IO_L0P_XCC_N0P0_M0P108_702, DDRMC.YES),
+            TripletPin(self.IO_L0N_XCC_N0P1_M0P109_702, DDRMC.YES),
+            TripletPin(self.IO_L1P_N0P2_M0P110_702, DDRMC.YES),
+            TripletPin(self.IO_L1N_N0P3_M0P111_702, DDRMC.YES),
+            TripletPin(self.IO_L2P_N0P4_M0P112_702, DDRMC.YES),
+            TripletPin(self.IO_L2N_N0P5_M0P113_702, DDRMC.YES),
+            TripletPin(self.IO_L3P_XCC_N1P0_M0P114_702, DDRMC.YES),
+            TripletPin(self.IO_L3N_XCC_N1P1_M0P115_702, DDRMC.YES),
+            TripletPin(self.IO_L4P_N1P2_M0P116_702, DDRMC.YES),
+            TripletPin(self.IO_L4N_N1P3_M0P117_702, DDRMC.YES),
+            TripletPin(self.IO_L5P_N1P4_M0P118_702, DDRMC.YES),
+            TripletPin(self.IO_L5N_N1P5_M0P119_702, DDRMC.YES),
+            TripletPin(self.IO_L6P_GC_XCC_N2P0_M0P120_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L6N_GC_XCC_N2P1_M0P121_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L7P_N2P2_M0P122_702, DDRMC.YES),
+            TripletPin(self.IO_L7N_N2P3_M0P123_702, DDRMC.YES),
+            TripletPin(self.IO_L8P_N2P4_M0P124_702, DDRMC.YES),
+            TripletPin(self.IO_L8N_N2P5_M0P125_702, DDRMC.YES),
+            TripletPin(self.IO_L9P_GC_XCC_N3P0_M0P126_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L9N_GC_XCC_N3P1_M0P127_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L10P_N3P2_M0P128_702, DDRMC.YES),
+            TripletPin(self.IO_L10N_N3P3_M0P129_702, DDRMC.YES),
+            TripletPin(self.IO_L11P_N3P4_M0P130_702, DDRMC.YES),
+            TripletPin(self.IO_L11N_N3P5_M0P131_702, DDRMC.YES),
+            TripletPin(self.IO_L12P_GC_XCC_N4P0_M0P132_702, DDRMC.NO),
+            TripletPin(self.IO_L12N_GC_XCC_N4P1_M0P133_702, DDRMC.NO),
+            TripletPin(self.IO_L13P_N4P2_M0P134_702, DDRMC.NO),
+            TripletPin(self.IO_L13N_N4P3_M0P135_702, DDRMC.NO),
+            TripletPin(self.IO_L14P_N4P4_M0P136_702, DDRMC.NO),
+            TripletPin(self.IO_L14N_N4P5_M0P137_702, DDRMC.NO),
+            TripletPin(self.IO_L15P_XCC_N5P0_M0P138_702, DDRMC.NO),
+            TripletPin(self.IO_L15N_XCC_N5P1_M0P139_702, DDRMC.NO),
+            TripletPin(self.IO_L16P_N5P2_M0P140_702, DDRMC.NO),
+            TripletPin(self.IO_L16N_N5P3_M0P141_702, DDRMC.NO),
+            TripletPin(self.IO_L17P_N5P4_M0P142_702, DDRMC.NO),
+            TripletPin(self.IO_L17N_N5P5_M0P143_702, DDRMC.NO),
+            TripletPin(self.IO_L18P_XCC_N6P0_M0P144_702, DDRMC.NO),
+            TripletPin(self.IO_L18N_XCC_N6P1_M0P145_702, DDRMC.NO),
+            TripletPin(self.IO_L19P_N6P2_M0P146_702, DDRMC.NO),
+            TripletPin(self.IO_L19N_N6P3_M0P147_702, DDRMC.NO),
+            TripletPin(self.IO_L20P_N6P4_M0P148_702, DDRMC.NO),
+            TripletPin(self.IO_L20N_N6P5_M0P149_702, DDRMC.NO),
+            TripletPin(self.IO_L21P_XCC_N7P0_M0P150_702, DDRMC.NO),
+            TripletPin(self.IO_L21N_XCC_N7P1_M0P151_702, DDRMC.NO),
+            TripletPin(self.IO_L22P_N7P2_M0P152_702, DDRMC.NO),
+            TripletPin(self.IO_L22N_N7P3_M0P153_702, DDRMC.NO),
+            TripletPin(self.IO_L23P_N7P4_M0P154_702, DDRMC.NO),
+            TripletPin(self.IO_L23N_N7P5_M0P155_702, DDRMC.NO),
+            TripletPin(self.IO_L24P_GC_XCC_N8P0_M0P156_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L24N_GC_XCC_N8P1_M0P157_702, DDRMC.YES_PLUS_GC),
+            TripletPin(self.IO_L25P_N8P2_M0P158_702, DDRMC.YES),
+            TripletPin(self.IO_L25N_N8P3_M0P159_702, DDRMC.YES),
+            TripletPin(self.IO_L26P_N8P4_M0P160_702, DDRMC.YES),
+            TripletPin(self.IO_L26N_N8P5_M0P161_702, DDRMC.YES),
+        )
+        return {0: m0}
 
     def symbol_partitions(self) -> Iterator[SymbolPartition]:
         """Yield the schematic box partitions (see .symbols)."""

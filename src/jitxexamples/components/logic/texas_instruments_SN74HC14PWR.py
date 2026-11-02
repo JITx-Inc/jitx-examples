@@ -1,21 +1,24 @@
-# This file is generated based on the parts database query below:
-#    from jitx_parts.query_api import create_part
-#    class Example(Circuit) :
-#        part = create_part(mpn = "SN74HC14PWR", manufacturer = "Texas Instruments")()
+"""
+SN74HC14PWR
+"""
 
-# File Location: components/Texas_Instruments/ComponentSN74HC14PWR.py
-# To import this component:
-#     from components.Texas_Instruments.ComponentSN74HC14PWR import ComponentSN74HC14PWR
+# File Location: src/jitxexamples/components/logic/texas_instruments_SN74HC14PWR.py
+# To use this component:
+#     from jitx.circuit import Circuit
+#     from jitxexamples.components.logic.texas_instruments_SN74HC14PWR import SN74HC14PWRCircuit
+#     class Example(Circuit):
+#         u1 = SN74HC14PWRCircuit()
 from jitx import Circuit, Polygon
 from jitx.anchor import Anchor
 from jitx.common import Power
 from jitx.component import Component
 from jitx.landpattern import PadMapping
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
-from jitx.shapes.primitive import Polyline, Circle, Text
+from jitx.shapes.primitive import Circle, Polyline, Text
 from jitx.si import Toleranced
-from jitx.symbol import Symbol, Pin, Direction, SymbolMapping
+from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F
 from jitxlib.landpatterns.generators.sop import SOP
 from jitxlib.landpatterns.ipc import DensityLevel
 from jitxlib.landpatterns.leads import LeadProfile, SMDLead
@@ -142,12 +145,15 @@ class SN74HC14PWRCircuit(Circuit):
     power = Power()
     inv = SN74HC14PWR()
 
-    def __init__(self):
-        self.nets = [self.inv.GND + self.power.Vn, self.inv.VCC + self.power.Vp]
+    def __init__(self) -> None:
+        self.GND = self.inv.GND + self.power.Vn
+        self.VCC = self.inv.VCC + self.power.Vp
 
-        self.byp = Capacitor(capacitance=0.1e-6).insert(
-            self.inv.VCC, self.inv.GND, short_trace=True
-        )
+        self.byp = Capacitor(capacitance=(0.1e-6) * F)
+        self.byp_short_traces = [
+            ShortTrace(self.inv.VCC, self.byp.p1),
+            ShortTrace(self.byp.p2, self.inv.GND),
+        ]
 
 
 Device: type[SN74HC14PWRCircuit] = SN74HC14PWRCircuit

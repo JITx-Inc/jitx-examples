@@ -17,14 +17,13 @@ from functools import cache
 from pathlib import Path
 
 # `package_design` is private; jitx.test.TestCase supplies the instantiation
-# context but exposes no public translate entry point. Logged under "API
-# findings" in internal/kits/js1-stackup-components/TODO.md.
+# context but exposes no public translate entry point.
 from jitx._translate.design import package_design
 from jitx.inspect import decompose
+from jitx.proxy import typeof
 
 # `_RefLayer` is private; `RoutingStructure.Layer` exposes no public accessor
-# for the planes carried by `.reference()`. Logged with the other private-
-# surface uses under "API findings" in internal/kits/js1-stackup-components/.
+# for the planes carried by `.reference()`.
 from jitx.si import RoutingStructure, _RefLayer
 from jitx.stackup import Conductor, Dielectric, Material
 from jitx.substrate import FabricationConstraints
@@ -120,6 +119,12 @@ def capability(rule: str) -> str:
         if row["Rule"] == rule:
             return row["Value_mm"]
     raise KeyError(rule)
+
+
+def stackup_entries() -> list[Material]:
+    """The stackup's entries in order, top to bottom. Needs an instantiation
+    context."""
+    return list(decompose(HDIStackup(), Material))
 
 
 @cache
@@ -257,6 +262,14 @@ class TestStackup(TestCase):
                         float(declared["Rz_matte_um"]) / 1000.0,
                         places=6,
                     )
+                    # Rz_drum_um has no JITX field, so the foil class's
+                    # docstring is its only record; matte goes there too.
+                    foil = typeof(stackup_entries()[int(row["Seq"]) - 1])
+                    for column in ("Rz_matte_um", "Rz_drum_um"):
+                        self.assertIn(
+                            f"{column.split('_')[1]} {declared[column]} um",
+                            foil.__doc__ or "",
+                        )
                     # oz is nominal; the electrical model uses finished thickness.
                     self.assertAlmostEqual(
                         proto.thickness,
@@ -535,6 +548,21 @@ class TestRoutingStructures(TestCase):
         "DIFF-100": "DRS_100",
     }
 
+    #: CSV Structure_ID -> the substrate attribute holding its neck region.
+    NECKS = {
+        "SE-DEFAULT": "Neck_SE",
+        "SE-40": "Neck_SE",
+        "SE-50": "Neck_SE",
+        "DIFF-100": "Neck_DIFF_100",
+    }
+
+    #: Neck structure attribute -> the CSV Structure_ID whose velocity and loss
+    #: it carries as a labelled default (the report quotes neither for a neck).
+    NECK_PARENTS = {
+        "Neck_SE": "SE-DEFAULT",
+        "Neck_DIFF_100": "DIFF-100",
+    }
+
     def rows_for(self, structure_id: str) -> list[dict[str, str]]:
         return [r for r in sections()["IMPEDANCE"] if r["Structure_ID"] == structure_id]
 
@@ -605,32 +633,97 @@ class TestRoutingStructures(TestCase):
                                 float(row["Pair_gap_mm"]),
                                 places=6,
                             )
-                        self.assert_neck_matches(layer, row)
+                        # NeckDown is not used in this kit: a neck region is
+                        # a structure of its own (test_neck_regions_...).
+                        self.assertIsNone(layer.neck_down)
 
-    def assert_neck_matches(self, layer, row: dict[str, str]) -> None:
-        """A blank Neck_* column means no neck-down — not a borrowed one."""
-        if not row["Neck_width_mm"].strip():
-            self.assertIsNone(
-                layer.neck_down,
-                f"{row['Structure_ID']} {row['Geometry']}: the report leaves the "
-                "Neck_* columns blank, so no neck-down may be declared",
-            )
-            return
-        assert layer.neck_down is not None
-        self.assertAlmostEqual(
-            layer.neck_down.trace_width or 0.0, float(row["Neck_width_mm"]), places=6
+    def test_neck_regions_are_structures_of_their_own(self):
+        """Each IMPEDANCE row's Neck_* geometry is carried by a routing structure
+        beside its target's, of the same kind, on the same layers. Targets that
+        quote the same neck geometry share one structure, and no two neck
+        structures carry the same geometry."""
+        substrate = HDISubstrate()
+        geometries: dict[str, set[tuple[object, ...]]] = {}
+        for structure_id, attribute in self.NECKS.items():
+            main = getattr(substrate, self.STRUCTURES[structure_id])
+            neck = getattr(substrate, attribute)
+            rows = self.rows_for(structure_id)
+            with self.subTest(structure=structure_id):
+                self.assertIs(type(neck), type(main))
+                self.assertEqual(set(neck.layers), set(main.layers))
+            for row in rows:
+                for name in row["Layers"].split(";"):
+                    number = int(name.removeprefix("L"))
+                    index = next(i for i in neck.layers if signed_to_layer(i) == number)
+                    layer = neck.layers[index]
+                    geometry = (
+                        number,
+                        layer.trace_width,
+                        getattr(layer, "pair_spacing", None),
+                        layer.clearance,
+                    )
+                    geometries.setdefault(attribute, set()).add(geometry)
+                    with self.subTest(structure=structure_id, layer=name):
+                        self.assertAlmostEqual(
+                            layer.trace_width, float(row["Neck_width_mm"]), places=6
+                        )
+                        self.assertAlmostEqual(
+                            layer.clearance or 0.0,
+                            float(row["Neck_clearance_mm"]),
+                            places=6,
+                        )
+                        if row["Neck_gap_mm"].strip():
+                            self.assertAlmostEqual(
+                                layer.pair_spacing, float(row["Neck_gap_mm"]), places=6
+                            )
+                        self.assertIsNone(layer.neck_down)
+        # Every target that quotes a neck geometry is mapped, and one attribute
+        # serves several targets only because they quote the same geometry.
+        self.assertEqual(
+            set(self.NECKS),
+            {
+                r["Structure_ID"]
+                for r in sections()["IMPEDANCE"]
+                if r["Neck_width_mm"].strip()
+            },
         )
-        self.assertAlmostEqual(
-            layer.neck_down.clearance or 0.0,
-            float(row["Neck_clearance_mm"]),
-            places=6,
-        )
-        if row["Neck_gap_mm"].strip():
-            self.assertAlmostEqual(
-                getattr(layer.neck_down, "pair_spacing", None) or 0.0,
-                float(row["Neck_gap_mm"]),
-                places=6,
-            )
+        shared = list(geometries.values())
+        for attribute, geometry in geometries.items():
+            with self.subTest(neck=attribute):
+                self.assertEqual(shared.count(geometry), 1)
+
+    def test_neck_values_come_from_the_report(self):
+        """A neck structure's impedance is one of its rows' Neck_modelled_Z_ohm
+        (the report gives a neck no target), and on each layer its velocity and
+        loss are its named parent row's."""
+        substrate = HDISubstrate()
+        self.assertEqual(set(self.NECK_PARENTS), set(self.NECKS.values()))
+        for attribute, parent_id in self.NECK_PARENTS.items():
+            neck = getattr(substrate, attribute)
+            modelled = {
+                round(float(row["Neck_modelled_Z_ohm"]), 6)
+                for structure_id, neck_attribute in self.NECKS.items()
+                if neck_attribute == attribute
+                for row in self.rows_for(structure_id)
+            }
+            with self.subTest(neck=attribute, value="impedance"):
+                self.assertIn(round(ohm.m_from(neck.impedance), 6), modelled)
+            for row in self.rows_for(parent_id):
+                for name in row["Layers"].split(";"):
+                    number = int(name.removeprefix("L"))
+                    index = next(i for i in neck.layers if signed_to_layer(i) == number)
+                    layer = neck.layers[index]
+                    with self.subTest(neck=attribute, layer=name):
+                        self.assertAlmostEqual(
+                            layer.insertion_loss,
+                            float(row["Loss_dB_per_mm"]),
+                            places=6,
+                        )
+                        self.assertAlmostEqual(
+                            layer.velocity,
+                            phase_velocity(float(row["Eps_eff"])),
+                            delta=1.0,
+                        )
 
     def test_microstrip_and_stripline_geometry_actually_differ(self):
         """The reason a per-layer table exists at all."""
@@ -694,7 +787,8 @@ class TestRoutingStructures(TestCase):
             REF_PLANE_WIDTH, 3 * float(d_bu["Thickness_mm"]), places=6
         )
         substrate = HDISubstrate()
-        structures = [(a, getattr(substrate, a)) for a in self.STRUCTURES.values()]
+        attributes = {*self.STRUCTURES.values(), *self.NECKS.values()}
+        structures = [(a, getattr(substrate, a)) for a in sorted(attributes)]
         uncoupled = substrate.DRS_100.uncoupled_region
         assert uncoupled is not None
         structures.append(("DRS_100.uncoupled_region", uncoupled))
@@ -736,7 +830,8 @@ class TestRoutingStructures(TestCase):
                         delta=1.0,
                     )
                     # The report leaves DIFF-100-UNC's Neck_* columns blank.
-                    self.assert_neck_matches(layer, row)
+                    self.assertEqual(row["Neck_width_mm"], "")
+                    self.assertIsNone(layer.neck_down)
 
     def test_standard_default_is_deliberately_not_modelled(self):
         """It has no single impedance, so it gets no RoutingStructure.
@@ -760,13 +855,19 @@ class TestRoutingStructures(TestCase):
             for r in sections()["IMPEDANCE"]
             if r["Controlled"] == "Yes" and r["Type"] == "Single-ended"
         ]
+        se_necks = {
+            self.NECKS[r["Structure_ID"]]
+            for r in controlled
+            if r["Neck_width_mm"].strip()
+        }
         self.assertEqual(
             len(found),
-            len({r["Structure_ID"] for r in controlled}) - 1,
+            len({r["Structure_ID"] for r in controlled}) - 1 + len(se_necks),
             "one RoutingStructure per controlled single-ended ID, less the "
-            "nested uncoupled region (decompose does not descend into it)",
+            "nested uncoupled region (decompose does not descend into it), plus "
+            "one per single-ended neck structure",
         )
-        self.assertEqual(len(found), 3)
+        self.assertEqual(len(found), 4)
         # Neither impedance that the standard geometry produces is claimed.
         for value in (41.87, 60.99):
             with self.subTest(impedance=value):

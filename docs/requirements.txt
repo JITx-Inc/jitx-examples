@@ -1,6 +1,8 @@
-sphinx
+sphinx>=8.1.0,<9.0
 sphinx_autodoc_typehints
 
-jitx
-jitxlib-standard
-jitxlib-parts
+jitx>=4.6.0rc2,<4.7
+jitxlib-standard>=4.6.0rc2,<4.7
+jitxlib-parts>=2.0.0rc1,<3
+eseries>=1.2.1,<2
+shapely>=2.1,<3

@@ -1,15 +1,15 @@
 from jitx.container import inline
 from jitx.test import TestCase
 from jitx.circuit import Circuit
-from jitx.sample import SampleDesign
-from jitxlib.parts.query_api import CapacitorQuery, ResistorQuery
+from tests.parts import PartsTestDesign
+from jitxlib.parts import CapacitorQuery, ResistorQuery
 
 from jitxexamples.components.power_linear_regulators.analog_devices_LT1763CS8 import (
     Device as LT1763LDODevice,
 )
 
 
-class LT1763LDODesign(SampleDesign):
+class LT1763LDODesign(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 

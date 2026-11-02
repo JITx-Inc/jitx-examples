@@ -1,3 +1,7 @@
+"""
+BSN20
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component

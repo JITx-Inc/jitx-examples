@@ -16,5 +16,3 @@ __pycache__/
 # `hatch build` output.
 /dist/
 
-# Deck-build dependencies, restored with `npm install` from the committed lockfile.
-node_modules/

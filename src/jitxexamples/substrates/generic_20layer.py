@@ -42,8 +42,9 @@ class GenericCopper(Conductor):
 
     ``roughness`` is intentionally left unset, so no per-conductor
     surface-roughness boundary is generated. Set it when modelling
-    fab-grade conductor loss (a Hammerstad ratio, or a Huray
-    ``(nodule_radius_m, area_ratio)`` tuple)."""
+    fab-grade conductor loss. It holds one number, a peak-to-valley Rz in mm
+    (see :py:attr:`jitx.stackup.Conductor.roughness`), so a Huray nodule
+    radius and surface ratio go to the EM exporter or field solver instead."""
 
 
 VEL_STRIPLINE = phase_velocity(3.0)
@@ -115,8 +116,9 @@ class Generic_Stackup(Stackup):
 
 
 class Generic_FabRules(FabricationConstraints):
-    # HDI-class fab floors tight enough that the routing structure's
-    # neckdown ``clearance=0.05`` isn't clamped up by the fab rule.
+    # HDI-class fab floors, tight enough that a routing structure on this
+    # substrate with ``clearance=0.05`` (the si_bga_optimization demo's
+    # differential pair) isn't clamped up by the engine-enforced copper rules.
     min_copper_width = 0.04
     min_copper_copper_space = 0.05
     min_copper_hole_space = 0.05

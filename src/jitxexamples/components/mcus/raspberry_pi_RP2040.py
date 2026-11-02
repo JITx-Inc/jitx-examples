@@ -3,26 +3,40 @@ Raspberry Pi RP2040 Microcontroller
 
 Component definition for the Raspberry Pi RP2040 dual-core ARM Cortex-M0+ microcontroller.
 Includes symbol, component, and circuit definitions with complete peripheral support.
+
+Source: Raspberry Pi Ltd, "RP2040 Datasheet", build-date 2025-02-20,
+build-version 3184e62-clean, https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf.
+
+- The I2C, SPI and UART pin options offered by ``RP2040`` (the ``@provide.one_of``
+  methods) are the F1 (SPI), F2 (UART) and F3 (I2C) columns of Table 279,
+  "General Purpose Input/Output (GPIO) User Bank Functions" (section 2.19.2,
+  Function Select).
+- USB_DP is pin 47 and USB_DM pin 46 (Table 620, USB pins), and each needs an
+  external 27 ohm series resistor (section 1.4.2 and Table 620).
 """
 
 from jitx import Circuit, PadMapping
 from jitx.anchor import Anchor
+from jitx.common import ADC, Power, Timer
+from jitx.common import GPIO as GPIO_Common
 from jitx.component import Component
-from jitx.net import Port, provide
+from jitx.net import DiffPair, Port, ShortTrace, provide
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Polygon, Text
-from jitx.si import Toleranced
+from jitx.si import BridgingPinModel, Toleranced
 from jitx.symbol import Direction, Pin, Symbol
+from jitx.units import F, ohm
 from jitxlib.landpatterns.generators.qfn import QFN, QFNLead
 from jitxlib.landpatterns.ipc import DensityLevel
 from jitxlib.landpatterns.leads import LeadProfile
 from jitxlib.landpatterns.package import RectanglePackage
-from jitx.common import ADC, GPIO as GPIO_Common, Power, Timer
+from jitxlib.parts import Capacitor, Resistor
 from jitxlib.protocols.serial import I2C, SPI, UART
 from jitxlib.protocols.usb import USB2
-from jitxlib.parts import Capacitor, Resistor
-from ..crystals.yangxing_tech_X322512MSB4SI import Device as X322512MSB4SI
+
+
 from ..buttons.xunpu_TS_1088_AR02016 import Device as TactileSwitch
+from ..crystals.yangxing_tech_X322512MSB4SI import Device as X322512MSB4SI
 from ..flash.winbond_W25Q128JVSIQ import Device as W25Q128JVSIQ
 
 
@@ -85,8 +99,10 @@ class RP2040_Symbol(Symbol):
     SWCLK = Pin(at=(-11, -16), direction=Direction.Left, length=1)
     SWD = Pin(at=(-11, -17), direction=Direction.Left, length=1)
     RUN = Pin(at=(-11, -12), direction=Direction.Left, length=1)
-    USB_DM = Pin(at=(11, 12), direction=Direction.Right, length=1)
+    # USB_DP before USB_DM: the component's USB DiffPair declares p before n,
+    # and the symbol maps to the ports in declaration order.
     USB_DP = Pin(at=(11, 13), direction=Direction.Right, length=1)
+    USB_DM = Pin(at=(11, 12), direction=Direction.Right, length=1)
     QSPI_SD3 = Pin(at=(-11, 4), direction=Direction.Left, length=1)
     QSPI_SCLK = Pin(at=(-11, 2), direction=Direction.Left, length=1)
     QSPI_SD0 = Pin(at=(-11, 7), direction=Direction.Left, length=1)
@@ -142,10 +158,8 @@ class RP2040Component(Component):
     """Serial wire debug data"""
     RUN = Port()
     """Reset/run control pin"""
-    USB_DM = Port()
-    """USB data minus"""
-    USB_DP = Port()
-    """USB data plus"""
+    USB = DiffPair()
+    """USB data, ``USB.p`` on USB_DP (pin 47) and ``USB.n`` on USB_DM (pin 46)"""
     QSPI_SD3 = Port()
     """QSPI data line 3"""
     QSPI_SCLK = Port()
@@ -232,8 +246,8 @@ class RP2040Component(Component):
                     GPIO[29]: [landpattern.p[41]],
                     IOVDD[1]: [landpattern.p[42]],
                     self.ADC_AVDD: [landpattern.p[43]],
-                    self.USB_DM: [landpattern.p[46]],
-                    self.USB_DP: [landpattern.p[47]],
+                    self.USB.n: [landpattern.p[46]],
+                    self.USB.p: [landpattern.p[47]],
                     self.USB_VDD: [landpattern.p[48]],
                     IOVDD[0]: [landpattern.p[49]],
                     GPIO[3]: [landpattern.p[5]],
@@ -272,48 +286,53 @@ class RP2040(Circuit):
     usb = USB2()
     """USB 2.0 interface"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.mcu = RP2040Component()
-        # USB connections
-        self.usb_nets = [
-            self.usb.data.n >> self.mcu.USB_DM,
-            self.usb.data.p >> self.mcu.USB_DP,
+        # USB connections. The RP2040 datasheet requires a 27 ohm series
+        # termination resistor on each USB pin (section 1.4.2, Pin Descriptions,
+        # and Table 620, USB pins). Each resistor carries a BridgingPinModel so
+        # a USB SI constraint measures through it; the 0 s and 0 dB values are
+        # a modelling assumption (the resistor datasheet quotes neither).
+        self.r_usb_p = Resistor(resistance=27.0 * ohm)
+        self.r_usb_n = Resistor(resistance=27.0 * ohm)
+        self.usb_pin_models = [
+            BridgingPinModel(self.r_usb_p.p1, self.r_usb_p.p2, delay=0.0, loss=0.0),
+            BridgingPinModel(self.r_usb_n.p1, self.r_usb_n.p2, delay=0.0, loss=0.0),
         ]
+        # MCU side of each resistor, then the USB side.
+        self.MCU_DP = self.mcu.USB.p + self.r_usb_p.p1
+        self.MCU_DM = self.mcu.USB.n + self.r_usb_n.p1
+        self.USB_DP = self.r_usb_p.p2 + self.usb.data.p
+        self.USB_DM = self.r_usb_n.p2 + self.usb.data.n
 
         # Bypass capacitors for VREG_VOUT and VREG_IN
-        self.c_byp1 = Capacitor(capacitance=1.0e-6).insert(
-            self.mcu.VREG_VOUT, self.power.Vn, short_trace=True
-        )
-        self.c_byp2 = Capacitor(capacitance=1.0e-6).insert(
-            self.mcu.VREG_IN, self.power.Vn, short_trace=True
-        )
+        self.c_byp1 = Capacitor(capacitance=(1.0e-6) * F)
+        self.c_byp1_short_traces = [
+            ShortTrace(self.mcu.VREG_VOUT, self.c_byp1.p1),
+            ShortTrace(self.c_byp1.p2, self.power.Vn),
+        ]
+        self.c_byp2 = Capacitor(capacitance=(1.0e-6) * F)
+        self.c_byp2_short_traces = [
+            ShortTrace(self.mcu.VREG_IN, self.c_byp2.p1),
+            ShortTrace(self.c_byp2.p2, self.power.Vn),
+        ]
 
         # IOVDD bypass capacitors (6 total, 1µF each)
         self.iovdd_bypass = []
+        self.iovdd_bypass_short_traces = []
         for iovdd_pin in self.mcu.IOVDD:
-            bypass_cap = Capacitor(capacitance=1.0e-6).insert(
-                iovdd_pin, self.power.Vn, short_trace=True
-            )
+            bypass_cap = Capacitor(capacitance=(1.0e-6) * F)
             self.iovdd_bypass.append(bypass_cap)
+            self.iovdd_bypass_short_traces.extend(
+                [
+                    ShortTrace(iovdd_pin, bypass_cap.p1),
+                    ShortTrace(bypass_cap.p2, self.power.Vn),
+                ]
+            )
 
-        # Power net connections
-        self.power_nets = [
-            # Connect VREG_VOUT to DVDD pins
-            self.mcu.VREG_VOUT + self.mcu.DVDD[0] + self.mcu.DVDD[1],
-            # VDD net: connect ADC_AVDD, USB_VDD, VREG_IN, and all IOVDD to power supply
-            self.power.Vp
-            + self.mcu.ADC_AVDD
-            + self.mcu.USB_VDD
-            + self.mcu.VREG_IN
-            + self.mcu.IOVDD[0]
-            + self.mcu.IOVDD[1]
-            + self.mcu.IOVDD[2]
-            + self.mcu.IOVDD[3]
-            + self.mcu.IOVDD[4]
-            + self.mcu.IOVDD[5],
-            # GND net: connect MCU ground to power supply ground
-            self.mcu.GND + self.power.Vn,
-        ]
+        # Connect VREG_VOUT to DVDD pins
+        self.DVDD = self.mcu.VREG_VOUT + self.mcu.DVDD[0] + self.mcu.DVDD[1]
+
         # Crystal resonator circuit
         self.x = X322512MSB4SI()
 
@@ -326,47 +345,48 @@ class RP2040(Circuit):
 
         # Load capacitors (C0G temperature coefficient preferred for crystal circuits)
         self.c_b1 = Capacitor(
-            capacitance=c_bal, temperature_coefficient_code="C0G"
-        ).insert(self.x.OSC2, self.power.Vn, short_trace=True)
+            capacitance=(c_bal) * F, temperature_coefficient_code="C0G"
+        )
+        self.c_b1_short_traces = [
+            ShortTrace(self.x.OSC2, self.c_b1.p1),
+            ShortTrace(self.c_b1.p2, self.power.Vn),
+        ]
         self.c_b2 = Capacitor(
-            capacitance=c_bal, temperature_coefficient_code="C0G"
-        ).insert(self.x.OSC1, self.power.Vn, short_trace=True)
-
-        # Series resistor between crystal and XOUT
-        self.r_x = Resistor(resistance=1.0e3).insert(self.x.OSC2, self.mcu.XOUT)
-
-        # Crystal ground connections
-        self.crystal_gnd_nets = [
-            self.x.GND0 + self.power.Vn,
-            self.x.GND1 + self.power.Vn,
+            capacitance=(c_bal) * F, temperature_coefficient_code="C0G"
+        )
+        self.c_b2_short_traces = [
+            ShortTrace(self.x.OSC1, self.c_b2.p1),
+            ShortTrace(self.c_b2.p2, self.power.Vn),
         ]
 
+        # Series resistor between crystal and XOUT
+        self.r_x = Resistor(resistance=(1.0e3) * ohm)
+        self.XTAL_OUT = self.x.OSC2 + self.r_x.p1
+        self.XOUT = self.r_x.p2 + self.mcu.XOUT
+
         # Crystal oscillator connections
-        self.crystal_nets = [self.x.OSC1 + self.mcu.XIN]
+        self.XIN = self.x.OSC1 + self.mcu.XIN
 
         # Boot and reset button circuits
         # Boot button (connected to QSPI_SS for boot mode selection)
         self.boot_butt = TactileSwitch()
-        self.boot_r = Resistor(resistance=1.0e3).insert(
-            self.boot_butt.p[1], self.mcu.QSPI_SS
-        )
-        self.c_boot = Capacitor(capacitance=0.1e-6).insert(
-            self.boot_butt.p[1], self.power.Vp, short_trace=True
-        )
+        self.boot_r = Resistor(resistance=(1.0e3) * ohm)
+        self.BOOT = self.boot_butt.p[1] + self.boot_r.p1
+        self.c_boot = Capacitor(capacitance=(0.1e-6) * F)
+        self.c_boot_short_traces = [
+            ShortTrace(self.boot_butt.p[1], self.c_boot.p1),
+            ShortTrace(self.c_boot.p2, self.power.Vp),
+        ]
 
         # Reset button (connected to RUN pin)
         self.reset_butt = TactileSwitch()
-        self.reset_r = Resistor(resistance=1.0e3).insert(
-            self.reset_butt.p[1], self.mcu.RUN
-        )
-        self.c_reset = Capacitor(capacitance=0.1e-6).insert(
-            self.reset_butt.p[1], self.power.Vp, short_trace=True
-        )
-
-        # Button ground connections
-        self.button_gnd_nets = [
-            self.boot_butt.p[2] + self.power.Vn,
-            self.reset_butt.p[2] + self.power.Vn,
+        self.reset_r = Resistor(resistance=(1.0e3) * ohm)
+        self.RESET = self.reset_butt.p[1] + self.reset_r.p1
+        self.RUN = self.reset_r.p2 + self.mcu.RUN
+        self.c_reset = Capacitor(capacitance=(0.1e-6) * F)
+        self.c_reset_short_traces = [
+            ShortTrace(self.reset_butt.p[1], self.c_reset.p1),
+            ShortTrace(self.c_reset.p2, self.power.Vp),
         ]
 
         # W25Q128 Flash Memory Circuit
@@ -376,33 +396,56 @@ class RP2040(Circuit):
         # Flash CS pull-up resistor: val r-pu = res-strap(flash.VCC flash.CS_NOT, 10.0e3)
         # property(r-pu.DNP) = true  # Do Not Populate by default
         # Since we're using the circuit interface, we need to add this resistor externally
-        self.r_flash_pu = Resistor(resistance=10.0e3).insert(
-            self.power.Vp, self.mcu.QSPI_SS
-        )
+        self.r_flash_pu = Resistor(resistance=(10.0e3) * ohm)
         self.r_flash_pu.in_bom = False
         self.r_flash_pu.soldered = False
         self.r_flash_pu.schematic_x_out = True
         # Note: In JITX, we can't directly set DNP property, but this resistor can be marked as optional
 
-        # Connect the flash circuit's power to the RP2040's power
-        self.flash_power_nets = [
-            self.flash_circuit.power.Vp + self.power.Vp,
-            self.flash_circuit.power.Vn + self.power.Vn,
-        ]
-
         # Connect the flash circuit's QSPI interface to the RP2040's QSPI pins
         # The W25Q128Circuit has a WideSPI.quad interface with 4 data lines and clock/cs
-        self.flash_qspi_nets = [
+        self.QSPI_SD = [
             self.flash_circuit.qspi.data[0] + self.mcu.QSPI_SD0,  # DI (MOSI)
             self.flash_circuit.qspi.data[1] + self.mcu.QSPI_SD1,  # DO (MISO)
             self.flash_circuit.qspi.data[2] + self.mcu.QSPI_SD2,  # IO2
             self.flash_circuit.qspi.data[3] + self.mcu.QSPI_SD3,  # IO3
-            self.flash_circuit.qspi.sck + self.mcu.QSPI_SCLK,  # Clock
         ]
+        self.QSPI_SCLK = self.flash_circuit.qspi.sck + self.mcu.QSPI_SCLK
 
-        # Add chip select connection if available (following the same pattern as in W25Q128Circuit)
+        # QSPI_SS: the boot button resistor, the flash CS pull-up, and the
+        # flash chip select if available (following the same pattern as in
+        # W25Q128Circuit)
+        self.QSPI_SS = self.boot_r.p2 + self.r_flash_pu.p2 + self.mcu.QSPI_SS
         if self.flash_circuit.qspi.cs is not None:
-            self.flash_qspi_nets.append(self.flash_circuit.qspi.cs + self.mcu.QSPI_SS)
+            self.QSPI_SS += self.flash_circuit.qspi.cs
+
+        # VDD: ADC_AVDD, USB_VDD, VREG_IN, all IOVDD, the flash supply and the
+        # flash CS pull-up, on the power supply
+        self.VDD = (
+            self.power.Vp
+            + self.mcu.ADC_AVDD
+            + self.mcu.USB_VDD
+            + self.mcu.VREG_IN
+            + self.mcu.IOVDD[0]
+            + self.mcu.IOVDD[1]
+            + self.mcu.IOVDD[2]
+            + self.mcu.IOVDD[3]
+            + self.mcu.IOVDD[4]
+            + self.mcu.IOVDD[5]
+            + self.flash_circuit.power.Vp
+            + self.r_flash_pu.p1
+        )
+        # GND: the MCU, the crystal, both buttons and the flash, on the power
+        # supply ground
+        self.GND = (
+            self.power.Vn
+            + self.mcu.GND
+            + self.x.GND0
+            + self.x.GND1
+            + self.boot_butt.p[2]
+            + self.reset_butt.p[2]
+            + self.flash_circuit.power.Vn
+        )
 
     # TODO: this is not all the peripherals that are available on the RP2040, we need to add them here
 
@@ -549,23 +592,23 @@ class RP2040(Circuit):
 
     @provide.one_of(I2C0_SDA)
     def self_provide_i2c0_sda(self, i2c0_sda: I2C0_SDA):
-        """Provide I2C0 SDA pins (GPIO 0, 4, 8, 12, 16, 20)"""
-        return [{i2c0_sda.p: self.mcu.GPIO[i]} for i in [0, 4, 8, 12, 16, 20]]
+        """Provide I2C0 SDA pins (GPIO 0, 4, 8, 12, 16, 20, 24, 28)"""
+        return [{i2c0_sda.p: self.mcu.GPIO[i]} for i in [0, 4, 8, 12, 16, 20, 24, 28]]
 
     @provide.one_of(I2C0_SCL)
     def self_provide_i2c0_scl(self, i2c0_scl: I2C0_SCL):
-        """Provide I2C0 SCL pins (GPIO 1, 5, 9, 13, 17, 21)"""
-        return [{i2c0_scl.p: self.mcu.GPIO[i]} for i in [1, 5, 9, 13, 17, 21]]
+        """Provide I2C0 SCL pins (GPIO 1, 5, 9, 13, 17, 21, 25, 29)"""
+        return [{i2c0_scl.p: self.mcu.GPIO[i]} for i in [1, 5, 9, 13, 17, 21, 25, 29]]
 
     @provide.one_of(I2C1_SDA)
     def self_provide_i2c1_sda(self, i2c1_sda: I2C1_SDA):
-        """Provide I2C1 SDA pins (GPIO 2, 6, 10, 14, 18, 26)"""
-        return [{i2c1_sda.p: self.mcu.GPIO[i]} for i in [2, 6, 10, 14, 18, 26]]
+        """Provide I2C1 SDA pins (GPIO 2, 6, 10, 14, 18, 22, 26)"""
+        return [{i2c1_sda.p: self.mcu.GPIO[i]} for i in [2, 6, 10, 14, 18, 22, 26]]
 
     @provide.one_of(I2C1_SCL)
     def self_provide_i2c1_scl(self, i2c1_scl: I2C1_SCL):
-        """Provide I2C1 SCL pins (GPIO 3, 7, 11, 15, 19, 27)"""
-        return [{i2c1_scl.p: self.mcu.GPIO[i]} for i in [3, 7, 11, 15, 19, 27]]
+        """Provide I2C1 SCL pins (GPIO 3, 7, 11, 15, 19, 23, 27)"""
+        return [{i2c1_scl.p: self.mcu.GPIO[i]} for i in [3, 7, 11, 15, 19, 23, 27]]
 
     # SPI pin providers
     @provide.one_of(SPI0_RX)
@@ -616,28 +659,28 @@ class RP2040(Circuit):
 
     @provide.one_of(UART0_TX)
     def self_provide_uart0_tx(self, uart0_tx: UART0_TX):
-        """Provide UART0 TX pins (GPIO 0, 4, 12, 16)"""
-        return [{uart0_tx.p: self.mcu.GPIO[i]} for i in [0, 4, 12, 16]]
+        """Provide UART0 TX pins (GPIO 0, 12, 16, 28)"""
+        return [{uart0_tx.p: self.mcu.GPIO[i]} for i in [0, 12, 16, 28]]
 
     @provide.one_of(UART0_CTS)
     def self_provide_uart0_cts(self, uart0_cts: UART0_CTS):
-        """Provide UART0 CTS pins (GPIO 2, 6, 14, 18)"""
-        return [{uart0_cts.p: self.mcu.GPIO[i]} for i in [2, 6, 14, 18]]
+        """Provide UART0 CTS pins (GPIO 2, 14, 18)"""
+        return [{uart0_cts.p: self.mcu.GPIO[i]} for i in [2, 14, 18]]
 
     @provide.one_of(UART0_RTS)
     def self_provide_uart0_rts(self, uart0_rts: UART0_RTS):
-        """Provide UART0 RTS pins (GPIO 3, 7, 15, 19)"""
-        return [{uart0_rts.p: self.mcu.GPIO[i]} for i in [3, 7, 15, 19]]
+        """Provide UART0 RTS pins (GPIO 3, 15, 19)"""
+        return [{uart0_rts.p: self.mcu.GPIO[i]} for i in [3, 15, 19]]
 
     @provide.one_of(UART1_RX)
     def self_provide_uart1_rx(self, uart1_rx: UART1_RX):
-        """Provide UART1 RX pins (GPIO 5, 9, 21, 25, 29)"""
-        return [{uart1_rx.p: self.mcu.GPIO[i]} for i in [5, 9, 21, 25, 29]]
+        """Provide UART1 RX pins (GPIO 5, 9, 21, 25)"""
+        return [{uart1_rx.p: self.mcu.GPIO[i]} for i in [5, 9, 21, 25]]
 
     @provide.one_of(UART1_TX)
     def self_provide_uart1_tx(self, uart1_tx: UART1_TX):
-        """Provide UART1 TX pins (GPIO 4, 8, 20, 24, 28)"""
-        return [{uart1_tx.p: self.mcu.GPIO[i]} for i in [4, 8, 20, 24, 28]]
+        """Provide UART1 TX pins (GPIO 4, 8, 20, 24)"""
+        return [{uart1_tx.p: self.mcu.GPIO[i]} for i in [4, 8, 20, 24]]
 
     @provide.one_of(UART1_CTS)
     def self_provide_uart1_cts(self, uart1_cts: UART1_CTS):
@@ -705,9 +748,7 @@ class RP2040(Circuit):
         return [{adc.adc: self.mcu.GPIO[i]} for i in [26, 27, 28, 29]]
 
     ## Property for datasheet URL
-    datasheet = (
-        "https://datasheet.lcsc.com/lcsc/2201101600_Raspberry-Pi-RP2040_C2040.pdf"
-    )
+    datasheet = "https://datasheets.raspberrypi.com/rp2040/rp2040-datasheet.pdf"
 
 
 Device: type[RP2040] = RP2040

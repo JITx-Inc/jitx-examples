@@ -1,3 +1,7 @@
+"""
+WS2816C-2121
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component

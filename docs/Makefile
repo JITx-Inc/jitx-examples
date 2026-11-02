@@ -6,6 +6,7 @@ SHELL := /bin/bash
 # You can set these variables from the command line, and also
 # from the environment for the first three.
 PIPOPTS       ?= --extra-index-url "https://pypi.jitx.com/jitx/main/+simple"
+PYTHON        ?= python3
 SPHINXOPTS    ?= --jobs 1 --write-all --fresh-env --warning-file build.out
 SPHINXAPIDOC  ?= sphinx-apidoc
 SPHINXBUILD   ?= sphinx-build
@@ -21,7 +22,7 @@ all: html archive
 
 # create python venv
 .venv: requirements.txt
-	python -m venv .venv \
+	$(PYTHON) -m venv .venv \
 	  && source .venv/bin/activate \
 	  && pip install $(PIPOPTS) -r requirements.txt \
 	  && touch .venv
@@ -52,4 +53,4 @@ archive:
 # clean up
 .PHONY: clean
 clean:
-	rm -rf .venv "source/jitxlib" "$(BUILDDIR)" build.out "$(ARCHIVENAME)"
+	rm -rf .venv "source/jitxexamples" "$(BUILDDIR)" build.out "$(ARCHIVENAME)"

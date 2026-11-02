@@ -3,8 +3,8 @@
 Pattern
     The standard JITX FPGA-wrapper shape: one ``Power`` port per supply
     rail, named power nets, distinct ground domains, and GT transceiver
-    quads exposed as bundle ports wired through the ``>>`` topology
-    operator.
+    quads exposed as bundle ports, each sub-port joined to its ball by a
+    plain net.
 
     One deliberate discipline: wrapper code in the wild often resolves
     component pins with ``getattr`` name composition
@@ -13,7 +13,7 @@ Pattern
     :meth:`~.xcvp1002.XCVP1002.gtm_quad_pins` groupings instead — every
     pin reference is an explicit attribute.
 
-Scope (JS1 · Part 3)
+Scope (JS1 · Part 2)
     Power/ground and the six GTM quads only. XPIO / PS-MIO bank bundles,
     GPIO mass-``Provide`` pin assignment, and per-net via fanout are board-
     level concerns deferred to JS2. Unwrapped pins remain reachable via
@@ -37,7 +37,8 @@ Rail roster
 from dataclasses import dataclass
 from enum import Enum
 
-from jitx import Circuit, Net
+from jitx import Circuit, Net, Symbol, extract
+from jitx.circuit import SchematicGroup
 from jitx.common import Power
 from jitx.net import Port
 
@@ -172,40 +173,49 @@ class XCVP1002Circuit(Circuit):
             ),
         ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.fpga = XCVP1002()
         fpga = self.fpga
 
         # GTM quads: bundle boundary ports wired lane-for-lane onto the
-        # component through pass-through topology segments, so SI
-        # constraints can attach at the bundle in a board design.
+        # component balls with plain nets. A board design's SI constraints
+        # take the bundle ports as their Topology ends; no ``>>`` is needed.
         quad_pins = fpga.gtm_quad_pins()
         self.gtm: dict[int, GTMQuad] = {bank: GTMQuad() for bank in quad_pins}
-        links = []
+        # One list per signal role, indexed [quad][lane] in bank order
+        # (202 to 207): GTM_TXP[0][1] is lane 1 of bank 202, ball GTM_TXP1_202.
+        self.GTM_TXP: list[list[Net]] = []
+        self.GTM_TXN: list[list[Net]] = []
+        self.GTM_RXP: list[list[Net]] = []
+        self.GTM_RXN: list[list[Net]] = []
+        self.GTM_REFCLKP: list[list[Net]] = []
+        self.GTM_REFCLKN: list[list[Net]] = []
         for bank, quad in self.gtm.items():
             pins = quad_pins[bank]
-            for lane, lane_pair in enumerate(quad.L):
-                links.append(lane_pair.TX.p >> pins.txp[lane])
-                links.append(lane_pair.TX.n >> pins.txn[lane])
-                links.append(lane_pair.RX.p >> pins.rxp[lane])
-                links.append(lane_pair.RX.n >> pins.rxn[lane])
-            for i, refclk in enumerate(quad.REFCLK):
-                links.append(refclk.p >> pins.refclkp[i])
-                links.append(refclk.n >> pins.refclkn[i])
-        self.gtm_links = links
+            lanes = list(enumerate(quad.L))
+            self.GTM_TXP.append([lp.TX.p + pins.txp[i] for i, lp in lanes])
+            self.GTM_TXN.append([lp.TX.n + pins.txn[i] for i, lp in lanes])
+            self.GTM_RXP.append([lp.RX.p + pins.rxp[i] for i, lp in lanes])
+            self.GTM_RXN.append([lp.RX.n + pins.rxn[i] for i, lp in lanes])
+            refclks = list(enumerate(quad.REFCLK))
+            self.GTM_REFCLKP.append([c.p + pins.refclkp[i] for i, c in refclks])
+            self.GTM_REFCLKN.append([c.n + pins.refclkn[i] for i, c in refclks])
 
-        # Sysmon analog inputs and GT bias pins pass straight through.
-        self.analog_nets = [
-            self.VP_500 + fpga.VP_500,
-            self.VN_500 + fpga.VN_500,
-            self.VREFP_500 + fpga.VREFP_500,
-            self.VREFN_500 + fpga.VREFN_500,
-            self.GTM_AVTTRCAL_L + fpga.GTM_AVTTRCAL_L,
-            self.GTM_RREF_L + fpga.GTM_RREF_L,
-            self.GTM_AVTTRCAL_RN + fpga.GTM_AVTTRCAL_RN,
-            self.GTM_RREF_RN + fpga.GTM_RREF_RN,
-            self.GTY_AVTTRCAL_RS + fpga.GTY_AVTTRCAL_RS,
-            self.GTY_RREF_RS + fpga.GTY_RREF_RS,
+        # Sysmon analog inputs and GT bias pins pass straight through, each
+        # net named for its ball.
+        self.SYSMON = [
+            Net([self.VP_500, fpga.VP_500], name="VP_500"),
+            Net([self.VN_500, fpga.VN_500], name="VN_500"),
+            Net([self.VREFP_500, fpga.VREFP_500], name="VREFP_500"),
+            Net([self.VREFN_500, fpga.VREFN_500], name="VREFN_500"),
+        ]
+        self.GT_CAL = [
+            Net([self.GTM_AVTTRCAL_L, fpga.GTM_AVTTRCAL_L], name="GTM_AVTTRCAL_L"),
+            Net([self.GTM_RREF_L, fpga.GTM_RREF_L], name="GTM_RREF_L"),
+            Net([self.GTM_AVTTRCAL_RN, fpga.GTM_AVTTRCAL_RN], name="GTM_AVTTRCAL_RN"),
+            Net([self.GTM_RREF_RN, fpga.GTM_RREF_RN], name="GTM_RREF_RN"),
+            Net([self.GTY_AVTTRCAL_RS, fpga.GTY_AVTTRCAL_RS], name="GTY_AVTTRCAL_RS"),
+            Net([self.GTY_RREF_RS, fpga.GTY_RREF_RS], name="GTY_RREF_RS"),
         ]
 
         # One named net per supply rail, spanning the boundary port's Vp
@@ -235,3 +245,6 @@ class XCVP1002Circuit(Circuit):
             self.gnd_net += pin
         self.gnd_smon_net += fpga.GND_SMON
         self.gnd_sense_net += fpga.GND_SENSE
+
+        # One schematic group per symbol box; rails cross groups by net label.
+        self.symbol_groups = [SchematicGroup(box) for box in extract(fpga, Symbol)]

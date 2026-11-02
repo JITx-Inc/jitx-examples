@@ -1,16 +1,21 @@
+"""
+PAM8302AADCR
+"""
+
 from jitx import PadMapping
 from jitx.circuit import Circuit
 from jitx.common import Power
 from jitx.component import Component
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
+from jitx.si import Toleranced
+from jitx.units import F
 from jitxlib.landpatterns.generators.soic import SOIC
 from jitxlib.landpatterns.ipc import DensityLevel
 from jitxlib.landpatterns.leads import LeadProfile, SMDLead
 from jitxlib.landpatterns.leads.protrusions import SmallGullWingLeads
 from jitxlib.landpatterns.package import RectanglePackage
 from jitxlib.parts import Capacitor
-from jitxlib.symbols.box import BoxSymbol, Row, PinGroup, Column
-from jitx.si import Toleranced
+from jitxlib.symbols.box import BoxSymbol, Column, PinGroup, Row
 
 
 class PAM8302AADCR(Component):
@@ -89,26 +94,28 @@ class PAM8302AADCRCircuit(Circuit):
     VO_plus = Port()
     VO_minus = Port()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.amp = PAM8302AADCR()
 
-        self.nets = [
-            self.power.Vp + self.amp.VDD,
-            self.power.Vn + self.amp.GND,
-            self.SD + self.amp.SD,
-            self.IN_plus + self.amp.IN_plus,
-            self.IN_minus + self.amp.IN_minus,
-            self.VO_plus + self.amp.VO_plus,
-            self.VO_minus + self.amp.VO_minus,
-        ]
+        self.VDD = self.power.Vp + self.amp.VDD
+        self.GND = self.power.Vn + self.amp.GND
+        self.sd = self.SD + self.amp.SD
+        self.in_plus = self.IN_plus + self.amp.IN_plus
+        self.in_minus = self.IN_minus + self.amp.IN_minus
+        self.vo_plus = self.VO_plus + self.amp.VO_plus
+        self.vo_minus = self.VO_minus + self.amp.VO_minus
 
         # Bypass Capacitors (1uF and 10uF)
-        self.c1 = Capacitor(capacitance=1e-6).insert(
-            self.amp.VDD, self.amp.GND, short_trace=True
-        )
-        self.c2 = Capacitor(capacitance=10e-6).insert(
-            self.amp.VDD, self.amp.GND, short_trace=True
-        )
+        self.c1 = Capacitor(capacitance=(1e-6) * F)
+        self.c1_short_traces = [
+            ShortTrace(self.amp.VDD, self.c1.p1),
+            ShortTrace(self.c1.p2, self.amp.GND),
+        ]
+        self.c2 = Capacitor(capacitance=(10e-6) * F)
+        self.c2_short_traces = [
+            ShortTrace(self.amp.VDD, self.c2.p1),
+            ShortTrace(self.c2.p2, self.amp.GND),
+        ]
 
         self.amp.NC.no_connect()
 

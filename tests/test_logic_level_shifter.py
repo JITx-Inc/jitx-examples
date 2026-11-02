@@ -1,15 +1,15 @@
 from jitx.container import inline
 from jitx.test import TestCase
 from jitx.circuit import Circuit
-from jitx.sample import SampleDesign
-from jitxlib.parts.query_api import CapacitorQuery, ResistorQuery
+from tests.parts import PartsTestDesign
+from jitxlib.parts import CapacitorQuery, ResistorQuery
 from jitxexamples.components.level_translators.logic_level_shifter import (
     LogicLevelShifter,
     I2CLevelShifter,
 )
 
 
-class Design1(SampleDesign):
+class Design1(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 
@@ -18,7 +18,7 @@ class Design1(SampleDesign):
         comp = LogicLevelShifter()
 
 
-class Design2(SampleDesign):
+class Design2(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 

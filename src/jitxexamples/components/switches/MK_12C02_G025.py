@@ -1,3 +1,7 @@
+"""
+MK-12C02-G025
+"""
+
 from jitx import PadMapping
 from jitx.anchor import Anchor
 from jitx.component import Component

@@ -14,12 +14,13 @@ from jitx.component import Component
 from jitx.feature import Finish, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad
 from jitx.layerindex import Side
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Polygon, Polyline, Text
 from jitx.symbol import Direction, Pin, Symbol
-from jitxlib.parts.query_api import Capacitor
-from jitxlib.symbols.box import BoxSymbol, Row, PinGroup
+from jitx.units import F
+from jitxlib.parts import Capacitor
+from jitxlib.symbols.box import BoxSymbol, PinGroup, Row
 
 
 class RectSMDPad1(Pad):
@@ -126,25 +127,26 @@ class NCP1117LPST33T3GCircuit(Circuit):
     vin = Power()
     vout = Power()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.ld = NCP1117LPST33T3G()
 
-        self.nets = [
-            self.vin.Vp + self.ld.VIN,
-            self.vin.Vn + self.ld.ADJGND,
-            self.vout.Vp + self.ld.VOUT,
-            self.vout.Vn + self.ld.ADJGND,
-        ]
+        self.VIN = self.vin.Vp + self.ld.VIN
+        self.GND = self.vin.Vn + self.vout.Vn + self.ld.ADJGND
+        self.VOUT = self.vout.Vp + self.ld.VOUT
 
         # Input Capacitor (10uF)
-        self.cin = Capacitor(capacitance=10e-6, case="0805").insert(
-            self.ld.VIN, self.ld.ADJGND, short_trace=True
-        )
+        self.cin = Capacitor(capacitance=(10e-6) * F, case="0805")
+        self.cin_short_traces = [
+            ShortTrace(self.ld.VIN, self.cin.p1),
+            ShortTrace(self.cin.p2, self.ld.ADJGND),
+        ]
 
         # Output Capacitor (10uF)
-        self.cout = Capacitor(capacitance=10e-6, case="0805").insert(
-            self.ld.VOUT, self.ld.ADJGND, short_trace=True
-        )
+        self.cout = Capacitor(capacitance=(10e-6) * F, case="0805")
+        self.cout_short_traces = [
+            ShortTrace(self.ld.VOUT, self.cout.p1),
+            ShortTrace(self.cout.p2, self.ld.ADJGND),
+        ]
 
 
 Device: type[NCP1117LPST33T3GCircuit] = NCP1117LPST33T3GCircuit

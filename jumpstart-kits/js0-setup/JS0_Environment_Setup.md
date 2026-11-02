@@ -243,43 +243,46 @@ to `@jitx <request to AI>` for general work). For example:
 ## Appendix A — Python dependencies
 
 Creating a project installs the packages below into the project virtual environment. The JS kits
-require **JITX 4.4.0 or newer**. The table is an **illustrative snapshot of the shape of the
-dependency set**, captured from a freshly scaffolded project on **JITX 4.4.0 with Python 3.12** —
-the versions are **not** the floor and they move with each release, so regenerate it for the version
-you are deploying with `pip list` in the project venv.
+require **JITX 4.6.x**. The table is an **illustrative snapshot of the shape of the
+dependency set**, captured from a freshly scaffolded project on Python 3.12.1 with pre-release 4.6
+builds: jitx 4.6.0rc9.dev2+ga358849d8, jitxcore 4.6.0rc3 and jitxlib-standard
+4.6.0rc3.dev12+g2fd994d25. The capture machine's pip serves pre-releases, which is why protobuf
+7.37.0rc1 appears, and jitx and jitxlib-standard were pinned to 4.6 after
+`jitx project dependencies upgrade` moved them past it. The versions are **not** the floor and they move with each
+release, so regenerate it for the version you are deploying with `pip list` in the project venv.
 
 > Note: the JITX runtime and the `jitx` / `jitxcore` Python packages must sit on the **same release
-> line** — the same major.minor, e.g. a 4.4.x runtime with 4.4.x packages. Patch numbers can differ;
-> release lines cannot — a 4.4 package against a 4.2 runtime is not a working install. `jitx runtime
+> line**: the same major.minor, e.g. a 4.6.x runtime with 4.6.x packages. Patch numbers can differ;
+> release lines cannot: a 4.6 package against a 4.4 runtime is not a working install. `jitx runtime
 > introspect` reports the runtime, `pip show jitx` the package.
 
 | Package | Version |
 | --- | --- |
 | annotated-doc | 0.0.5 |
-| anyio | 4.14.2 |
-| certifi | 2026.7.22 |
+| anyio | 4.15.1 |
+| certifi | 2026.10.23 |
 | click | 8.5.0 |
 | flexcache | 0.3 |
 | flexparser | 0.4 |
 | h11 | 0.16.0 |
 | httpcore | 1.0.9 |
 | httpx | 0.28.1 |
-| idna | 3.19 |
-| jitx | 4.4.0 |
-| jitxcore | 4.4.0 |
-| jitxlib-standard | 4.4.0 |
+| idna | 3.20 |
+| jitx | 4.6.0rc9.dev2+ga358849d8 |
+| jitxcore | 4.6.0rc3 |
+| jitxlib-standard | 4.6.0rc3.dev12+g2fd994d25 |
 | markdown-it-py | 4.2.0 |
 | mdurl | 0.1.2 |
-| numpy | 2.5.2 |
+| numpy | 2.5.4 |
 | packaging | 25.0 |
 | Pint | 0.24.4 |
-| pip | 25.0.1 |
-| platformdirs | 4.11.5 |
-| protobuf | 7.36.1 |
+| pip | 23.2.1 |
+| platformdirs | 4.14.0 |
+| protobuf | 7.37.0rc1 |
 | psutil | 7.2.2 |
 | Pygments | 2.21.0 |
 | rich | 14.3.4 |
-| shapely | 2.1.2 |
+| shapely | 2.2.0 |
 | shellingham | 1.5.4 |
 | typer | 0.25.1 |
 | typing_extensions | 4.16.0 |

@@ -1,16 +1,23 @@
+"""
+BQ24078RGTR
+"""
+
 from jitx.anchor import Anchor
-from jitx.component import Component as JITXComponent
 from jitx.circuit import Circuit
+from jitx.component import Component as JITXComponent
+from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad, PadMapping
 from jitx.model3d import Model3D
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Circle, Polygon, Polyline, Text
-from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
 from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
-from jitxlib.parts.query_api import Capacitor, Resistor
-from ..leds.KT_0603R import KT_0603R
+from jitx.units import F, V, ohm
+from jitxlib.parts import AtLeast, Capacitor, Resistor
+
+
 from ..leds.KT_0603G import KT_0603G
+from ..leds.KT_0603R import KT_0603R
 
 
 class RectangleSmdPad(Pad):
@@ -403,7 +410,7 @@ class BQ24078RGTR(Circuit):
     gnd = Port()
     bat_plus = Port()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the battery charger circuit with all components and connections"""
 
         # Create the battery charger IC instance
@@ -412,23 +419,35 @@ class BQ24078RGTR(Circuit):
         # Input bypass capacitor (4.7µF, 16V rated)
         # Place close to IN pin for input ripple filtering
         self.c_in = Capacitor(
-            capacitance=4.7e-6,
-            rated_voltage=16.0,
-        ).insert(self.bq.IN, self.gnd, short_trace=True)
+            capacitance=(4.7e-6) * F,
+            rated_voltage_dc=AtLeast(16.0 * V),
+        )
+        self.c_in_short_traces = [
+            ShortTrace(self.bq.IN, self.c_in.p1),
+            ShortTrace(self.c_in.p2, self.gnd),
+        ]
 
         # Output bypass capacitor (4.7µF, 16V rated)
         # Place close to OUT pins for output stability
         self.c_out = Capacitor(
-            capacitance=4.7e-6,
-            rated_voltage=16.0,
-        ).insert(self.bq.OUT0, self.gnd, short_trace=True)
+            capacitance=(4.7e-6) * F,
+            rated_voltage_dc=AtLeast(16.0 * V),
+        )
+        self.c_out_short_traces = [
+            ShortTrace(self.bq.OUT0, self.c_out.p1),
+            ShortTrace(self.c_out.p2, self.gnd),
+        ]
 
         # Battery bypass capacitor (4.7µF, 16V rated)
         # Place close to BAT pins for battery connection stability
         self.c_bat = Capacitor(
-            capacitance=4.7e-6,
-            rated_voltage=16.0,
-        ).insert(self.bq.BAT0, self.gnd, short_trace=True)
+            capacitance=(4.7e-6) * F,
+            rated_voltage_dc=AtLeast(16.0 * V),
+        )
+        self.c_bat_short_traces = [
+            ShortTrace(self.bq.BAT0, self.c_bat.p1),
+            ShortTrace(self.c_bat.p2, self.gnd),
+        ]
 
         # Charge indicator LED (red, 0603)
         # Turns on when battery is charging
@@ -441,68 +460,100 @@ class BQ24078RGTR(Circuit):
         # LED ballast resistors
         # Limit current through status LEDs
         self.r_chg_led = Resistor(
-            resistance=1.0e3,
+            resistance=(1.0e3) * ohm,
             case="0603",
-        ).insert(self.bq.CHG_NOT, self.charge_led.K, short_trace=True)
+        )
+        self.r_chg_led_short_traces = [
+            ShortTrace(self.bq.CHG_NOT, self.r_chg_led.p1),
+            ShortTrace(self.r_chg_led.p2, self.charge_led.K),
+        ]
 
         self.r_gpw_led = Resistor(
-            resistance=2.0e3,
+            resistance=(2.0e3) * ohm,
             case="0603",
-        ).insert(self.bq.PGOOD_NOT, self.good_power_led.K, short_trace=True)
+        )
+        self.r_gpw_led_short_traces = [
+            ShortTrace(self.bq.PGOOD_NOT, self.r_gpw_led.p1),
+            ShortTrace(self.r_gpw_led.p2, self.good_power_led.K),
+        ]
 
         # CE pin pulldown resistor (33Ω)
         # Enable charging by pulling CE low
         self.r_pd_ce = Resistor(
-            resistance=33.0,
+            resistance=(33.0) * ohm,
             case="0603",
-        ).insert(self.bq.CE_NOT, self.gnd, short_trace=True)
+        )
+        self.r_pd_ce_short_traces = [
+            ShortTrace(self.bq.CE_NOT, self.r_pd_ce.p1),
+            ShortTrace(self.r_pd_ce.p2, self.gnd),
+        ]
 
         # TS pin pulldown resistor (10kΩ)
         # Disable thermistor function (no temperature sensing)
         self.r_ts = Resistor(
-            resistance=10.0e3,
+            resistance=(10.0e3) * ohm,
             case="0603",
-        ).insert(self.bq.TS, self.gnd, short_trace=True)
+        )
+        self.r_ts_short_traces = [
+            ShortTrace(self.bq.TS, self.r_ts.p1),
+            ShortTrace(self.r_ts.p2, self.gnd),
+        ]
 
         # Current limit setting resistors
         # EN1=high, EN2=low sets USB current limit to 500mA
         self.r_pu_en1 = Resistor(
-            resistance=33.0,
+            resistance=(33.0) * ohm,
             case="0603",
-        ).insert(self.bq.EN1, self.bat_plus, short_trace=True)
+        )
+        self.r_pu_en1_short_traces = [
+            ShortTrace(self.bq.EN1, self.r_pu_en1.p1),
+            ShortTrace(self.r_pu_en1.p2, self.bat_plus),
+        ]
 
         self.r_pd_en2 = Resistor(
-            resistance=33.0,
+            resistance=(33.0) * ohm,
             case="0603",
-        ).insert(self.bq.EN2, self.gnd, short_trace=True)
+        )
+        self.r_pd_en2_short_traces = [
+            ShortTrace(self.bq.EN2, self.r_pd_en2.p1),
+            ShortTrace(self.r_pd_en2.p2, self.gnd),
+        ]
 
         # Current limit resistor (1.1kΩ)
         # Sets the maximum input current limit
         self.r_ilim = Resistor(
-            resistance=1.1e3,
+            resistance=(1.1e3) * ohm,
             case="0603",
-        ).insert(self.bq.ILIM, self.gnd, short_trace=True)
+        )
+        self.r_ilim_short_traces = [
+            ShortTrace(self.bq.ILIM, self.r_ilim.p1),
+            ShortTrace(self.r_ilim.p2, self.gnd),
+        ]
 
         # Charge current setting resistor (2.7kΩ)
         # Formula: I_CHG = 890V / R_ISET
         # 890V / 2700Ω = 330mA (approximately 325mA target)
         self.r_chg = Resistor(
-            resistance=2700.0,
+            resistance=(2700.0) * ohm,
             case="0603",
-        ).insert(self.bq.ISET, self.gnd, short_trace=True)
-
-        # Net connections
-        self.nets = [
-            # Power connections
-            self.bq.OUT0 + self.bq.OUT1 + self.vout,
-            self.bq.BAT0 + self.bq.BAT1 + self.bat_plus,
-            self.bq.VSS + self.bq.EP + self.gnd,  # EP (exposed pad) to GND
-            self.bq.IN + self.vin,
-            self.bq.SYSOFF + self.gnd,  # SYSOFF low for normal operation
-            # LED connections
-            self.charge_led.A + self.vout,
-            self.good_power_led.A + self.vout,
+        )
+        self.r_chg_short_traces = [
+            ShortTrace(self.bq.ISET, self.r_chg.p1),
+            ShortTrace(self.r_chg.p2, self.gnd),
         ]
+
+        # Net connections; the status LED anodes hang off OUT
+        self.OUT = (
+            self.bq.OUT0
+            + self.bq.OUT1
+            + self.vout
+            + self.charge_led.A
+            + self.good_power_led.A
+        )
+        self.BAT = self.bq.BAT0 + self.bq.BAT1 + self.bat_plus
+        # EP (exposed pad) to GND; SYSOFF low for normal operation
+        self.GND = self.bq.VSS + self.bq.EP + self.bq.SYSOFF + self.gnd
+        self.IN = self.bq.IN + self.vin
 
 
 Device: type[BQ24078RGTR] = BQ24078RGTR

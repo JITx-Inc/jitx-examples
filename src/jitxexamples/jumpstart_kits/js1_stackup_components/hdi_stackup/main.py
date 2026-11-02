@@ -8,7 +8,8 @@ for a parts query or a route.
 
 What this design does prove: the 41-entry stackup translates, all 12 via
 structures register off the substrate walk, all 19 fabrication constraints are
-present, and the four routing structures resolve by impedance. The tests in
+present, and the four target routing structures resolve by impedance, with the
+two neck structures beside them. The tests in
 ``tests/test_js1_hdi_stackup.py`` check each of those against the fab CSV.
 """
 

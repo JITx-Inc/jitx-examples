@@ -9,22 +9,23 @@ Datasheet: https://www.ti.com/lit/ds/symlink/iso1211.pdf
 
 from jitx import current
 from jitx.anchor import Anchor
-from jitx.constraints import IsBoardEdge, Tag, design_constraint
-from jitx.landpattern import PadMapping
-from jitx.net import Port
-from jitx.shapes.composites import rectangle
-from jitx.shapes.primitive import Circle, Polyline, Text
-from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
-from jitx.component import Component
 from jitx.circuit import Circuit
 from jitx.common import Power
+from jitx.component import Component
+from jitx.constraints import IsBoardEdge, Tag, design_constraint
+from jitx.landpattern import PadMapping
+from jitx.net import Port, ShortTrace
+from jitx.shapes.composites import rectangle
+from jitx.shapes.primitive import Circle, Polyline, Text
 from jitx.si import Toleranced
-from jitxlib.parts import Capacitor, Resistor
+from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F, ohm
 from jitxlib.landpatterns.generators.soic import SOIC
 from jitxlib.landpatterns.ipc import DensityLevel
 from jitxlib.landpatterns.leads import LeadProfile, SMDLead
 from jitxlib.landpatterns.leads.protrusions import BigGullWingLeads
 from jitxlib.landpatterns.package import RectanglePackage
+from jitxlib.parts import Capacitor, Resistor
 
 
 class SymbolISO1211(Symbol):
@@ -201,48 +202,46 @@ class ISO1211Circuit(Circuit):
     field_input_neg = Port()
     """Field-side negative input (field ground)"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Instantiate the ISO1211 isolator
         self.isolator = ISO1211()
 
         # VCC1 bypass capacitor (100nF as per datasheet)
-        self.bypass_cap_vcc = Capacitor(capacitance=100e-9).insert(
-            self.isolator.VCC1, self.isolator.GND1, short_trace=True
-        )
+        self.bypass_cap_vcc = Capacitor(capacitance=(100e-9) * F)
+        self.bypass_cap_vcc_short_traces = [
+            ShortTrace(self.isolator.VCC1, self.bypass_cap_vcc.p1),
+            ShortTrace(self.bypass_cap_vcc.p2, self.isolator.GND1),
+        ]
 
         # Field-side components as per datasheet Figure 17
         # RTHR: Current limiting resistor (field input protection)
         # Typical value depends on field voltage and desired current limit
-        self.r_thr = Resistor(resistance=10e3)  # 10kΩ typical for 24V input
+        self.r_thr = Resistor(resistance=(10e3) * ohm)  # 10kΩ typical for 24V input
 
         # RSENSE: Current sensing resistor (562Ω for 2.25mA limit, 200Ω for higher current)
-        self.r_sense = Resistor(resistance=562.0)  # 562Ω for Type 1/3 operation
+        self.r_sense = Resistor(resistance=(562.0) * ohm)  # 562Ω for Type 1/3 operation
 
         # CIN: Input coupling capacitor (field-side filtering)
-        self.c_in = Capacitor(capacitance=100e-9)  # 100nF typical
+        self.c_in = Capacitor(capacitance=(100e-9) * F)  # 100nF typical
 
         # Net connections following datasheet application circuit
-        self.nets = [
-            # VCC1 power connections
-            self.power_vcc.Vp + self.isolator.VCC1,
-            self.power_vcc.Vn + self.isolator.GND1,
-            # Enable signal connection
-            self.enable + self.isolator.EN,
-            # Output signal connection
-            self.output_signal + self.isolator.OUT,
-        ]
+        # VCC1 power connections
+        self.VCC1 = self.power_vcc.Vp + self.isolator.VCC1
+        self.GND1 = self.power_vcc.Vn + self.isolator.GND1
+        # Enable signal connection
+        self.EN = self.enable + self.isolator.EN
+        # Output signal connection
+        self.OUT = self.output_signal + self.isolator.OUT
         self.sub = Port()
-        self.hv_nets = [
-            # Field-side circuit connections
-            # Field input -> RTHR -> node -> RSENSE -> SENSE pin
-            self.field_input_pos + self.r_thr.p1,
-            self.r_thr.p2 + self.r_sense.p1 + self.c_in.p1 + self.isolator.IN,
-            self.r_sense.p2 + self.isolator.SENSE,
-            # Field ground connections
-            self.field_input_neg + self.isolator.FGND + self.c_in.p2,
-            self.sub + self.isolator.SUB,
-        ]
-        HVNets().assign(*self.hv_nets)
+        # Field-side circuit connections
+        # Field input -> RTHR -> node -> RSENSE -> SENSE pin
+        self.FIELD_IN = self.field_input_pos + self.r_thr.p1
+        self.IN = self.r_thr.p2 + self.r_sense.p1 + self.c_in.p1 + self.isolator.IN
+        self.SENSE = self.r_sense.p2 + self.isolator.SENSE
+        # Field ground connections
+        self.FGND = self.field_input_neg + self.isolator.FGND + self.c_in.p2
+        self.SUB = self.sub + self.isolator.SUB
+        HVNets().assign(self.FIELD_IN, self.IN, self.SENSE, self.FGND, self.SUB)
         self.rules = [
             design_constraint(HVNets(), ~IsBoardEdge, priority=1).clearance(4.0),
             design_constraint(HVNets(), HVNets(), priority=1).clearance(

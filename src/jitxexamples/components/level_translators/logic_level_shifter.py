@@ -1,7 +1,13 @@
+"""
+LogicLevelShifter
+"""
+
 from jitx.circuit import Circuit
 from jitx.net import Port
-from jitxlib.parts.query_api import Resistor
+from jitx.units import ohm
+from jitxlib.parts import Resistor
 from jitxlib.protocols.serial import I2C
+
 from ..fets_n_ch.BSS138 import BSS138
 
 
@@ -23,13 +29,12 @@ class LogicLevelShifter(Circuit):
     # Pull-up resistors
     lv_pullup = Resistor(
         # description="Low voltage pull-up resistor",
-        resistance=10.0e3,  # 10kΩ
-    ).insert(lv_signal, lv)
-
+        resistance=(10.0e3) * ohm,  # 10kΩ
+    )
     hv_pullup = Resistor(
         # description="High voltage pull-up resistor",
-        resistance=10.0e3,  # 10kΩ
-    ).insert(hv_signal, hv)
+        resistance=(10.0e3) * ohm,  # 10kΩ
+    )
 
     # Circuit connections
     nets = [
@@ -37,8 +42,10 @@ class LogicLevelShifter(Circuit):
         fet.S + lv_signal,  # Source to low voltage signal
         fet.D + hv_signal,  # Drain to high voltage signal
         fet.G + lv,  # Gate to low voltage supply
-        # Pull-up resistor connections
-        # fet.G + gnd,
+        lv_signal + lv_pullup.p1,
+        lv_pullup.p2 + lv,
+        hv_signal + hv_pullup.p1,
+        hv_pullup.p2 + hv,
     ]
 
 

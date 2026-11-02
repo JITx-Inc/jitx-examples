@@ -10,17 +10,18 @@ from jitx.circuit import Circuit
 from jitx.common import Power
 from jitx.component import Component
 from jitx.landpattern import PadMapping
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Circle, Text
 from jitx.si import Toleranced
 from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F, V
 from jitxlib.landpatterns.generators.soic import SOIC
 from jitxlib.landpatterns.ipc import DensityLevel
 from jitxlib.landpatterns.leads import LeadProfile, SMDLead
 from jitxlib.landpatterns.leads.protrusions import BigGullWingLeads
 from jitxlib.landpatterns.package import RectanglePackage
-from jitxlib.parts import Capacitor
+from jitxlib.parts import AtLeast, Capacitor
 
 
 class SymbolLT1763CS8(Symbol):
@@ -73,11 +74,10 @@ class LT1763CS8(Component):
     """Input voltage"""
 
     def __init__(self, output_voltage: float):
-        """
-        Initialize LT1763 with specified output voltage
+        """Initialize an LT1763 with the specified output voltage.
 
-        Args:
-            output_voltage: Output voltage in volts (1.5, 1.8, 2.5, 3.0, 3.3, or 5.0)
+        ``output_voltage`` is in volts and must be 1.5, 1.8, 2.5, 3.0, 3.3,
+        or 5.0.
         """
         super().__init__()
 
@@ -167,24 +167,12 @@ class LT1763CS8(Component):
 
 
 class LT1763LDO(Circuit):
-    """
-    Parametric LT1763 Low Dropout Linear Regulator Circuit
+    """Parametric LT1763 low-dropout regulator circuit.
 
-    Complete LDO circuit with proper input, output, and bypass capacitors
-    as recommended in the LT1763 datasheet.
-
-    Features:
-    - Input capacitor (Cin): 10µF
-    - Output capacitor (Cout): 10µF
-    - Bypass capacitor (Cbyp): 0.01µF
-    - Parametric input and output voltages
-    - Proper voltage ratings (2x expected voltage minimum)
-    - Optional shutdown control
-
-    Args:
-        input_voltage: Expected input voltage in volts
-        output_voltage: Desired output voltage in volts (1.5, 1.8, 2.5, 3.0, 3.3, or 5.0)
-        enable_control: If True, exposes shutdown control pin; if False, ties SHDN high
+    The circuit includes the input, output, and bypass capacitors recommended by
+    the datasheet. ``input_voltage`` and ``output_voltage`` are in volts. When
+    ``enable_control`` is true, the shutdown pin is exposed; otherwise it is tied
+    high.
     """
 
     # Port definitions as class attributes
@@ -194,14 +182,13 @@ class LT1763LDO(Circuit):
 
     def __init__(
         self, input_voltage: float, output_voltage: float, enable_control: bool = False
-    ):
-        """
-        Initialize LT1763 LDO circuit
+    ) -> None:
+        """Initialize an LT1763 LDO circuit.
 
-        Args:
-            input_voltage: Expected input voltage in volts (must be > output_voltage + 0.3V dropout)
-            output_voltage: Desired output voltage in volts (1.5, 1.8, 2.5, 3.0, 3.3, or 5.0)
-            enable_control: If True, exposes shutdown control; if False, ties SHDN high internally
+        ``input_voltage`` must exceed ``output_voltage`` by at least 0.3 V.
+        ``output_voltage`` must be 1.5, 1.8, 2.5, 3.0, 3.3, or 5.0 V. When
+        ``enable_control`` is true, the shutdown pin is exposed; otherwise it is
+        tied high internally.
         """
         super().__init__()
 
@@ -228,49 +215,60 @@ class LT1763LDO(Circuit):
 
         # Input capacitor: 10µF between VIN and GND
         self.cin = Capacitor(
-            capacitance=10e-6,
-            rated_voltage=input_cap_voltage,
+            capacitance=(10e-6) * F,
+            rated_voltage_dc=AtLeast(input_cap_voltage * V),
             temperature_coefficient_code="X7R",  # Stable ceramic for power applications
-        ).insert(self.regulator.IN, self.power_in.Vn, short_trace=True)
+        )
+        self.cin_short_traces = [
+            ShortTrace(self.regulator.IN, self.cin.p1),
+            ShortTrace(self.cin.p2, self.power_in.Vn),
+        ]
 
         # Output capacitor: 10µF between VOUT and GND
         self.cout = Capacitor(
-            capacitance=10e-6,
-            rated_voltage=output_cap_voltage,
+            capacitance=(10e-6) * F,
+            rated_voltage_dc=AtLeast(output_cap_voltage * V),
             temperature_coefficient_code="X7R",
-        ).insert(self.regulator.OUT, self.power_out.Vn, short_trace=True)
+        )
+        self.cout_short_traces = [
+            ShortTrace(self.regulator.OUT, self.cout.p1),
+            ShortTrace(self.cout.p2, self.power_out.Vn),
+        ]
 
         # Bypass capacitor: 0.01µF between BYP and GND
         self.cbyp = Capacitor(
-            capacitance=0.01e-6,
-            rated_voltage=bypass_cap_voltage,
+            capacitance=(0.01e-6) * F,
+            rated_voltage_dc=AtLeast(bypass_cap_voltage * V),
             temperature_coefficient_code="C0G",  # Stable for reference bypass
-        ).insert(self.regulator.BYP, self.power_out.Vn, short_trace=True)
+        )
+        self.cbyp_short_traces = [
+            ShortTrace(self.regulator.BYP, self.cbyp.p1),
+            ShortTrace(self.cbyp.p2, self.power_out.Vn),
+        ]
 
         # Connect power nets
-        self.nets = [
-            # Input power connections
-            self.power_in.Vp + self.regulator.IN,
+        # Input power connections
+        self.IN = self.power_in.Vp + self.regulator.IN
+        self.GND = (
             self.power_in.Vn
             + self.power_out.Vn
             + self.regulator.GND0
             + self.regulator.GND1
-            + self.regulator.GND2,
-            # Output power connections
-            self.power_out.Vp + self.regulator.OUT,
-            # Connect SENSE to OUT for local sensing (typical application)
-            self.regulator.SENSE_ADJ + self.regulator.OUT,
-        ]
+            + self.regulator.GND2
+        )
+        # Output power connections; SENSE ties to OUT for local sensing
+        # (typical application)
+        self.OUT = self.power_out.Vp + self.regulator.OUT + self.regulator.SENSE_ADJ
 
         # Handle shutdown control
         if enable_control:
             # Expose shutdown control pin
             self.enable = Port()
             """Enable control (active high). Pull low to shutdown regulator."""
-            self.nets.append(self.enable + self.regulator.SHDN_NOT)
+            self.SHDN_NOT = self.enable + self.regulator.SHDN_NOT
         else:
             # Tie SHDN high to always enable the regulator
-            self.nets.append(self.regulator.SHDN_NOT + self.power_in.Vp)
+            self.IN += self.regulator.SHDN_NOT
 
 
 # Device alias points to the complete LDO circuit

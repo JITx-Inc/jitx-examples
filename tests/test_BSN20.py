@@ -1,12 +1,12 @@
 from jitx.container import inline
 from jitx.test import TestCase
 from jitx.circuit import Circuit
-from jitx.sample import SampleDesign
-from jitxlib.parts.query_api import CapacitorQuery, ResistorQuery
+from tests.parts import PartsTestDesign
+from jitxlib.parts import CapacitorQuery, ResistorQuery
 from jitxexamples.components.fets_n_ch.BSN20 import BSN20
 
 
-class Design(SampleDesign):
+class Design(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 

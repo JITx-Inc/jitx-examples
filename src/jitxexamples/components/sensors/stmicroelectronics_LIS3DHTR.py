@@ -1,3 +1,7 @@
+"""
+LIS3DHTR
+"""
+
 from jitx import Component
 from jitx.circuit import Circuit, SchematicGroup
 from jitx.common import Power
@@ -7,8 +11,8 @@ from jitx.landpattern import Landpattern, Pad, PadMapping
 from jitx.net import Port
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Anchor, Circle, Text
-
-from jitxlib.parts.query_api import Capacitor
+from jitx.units import F
+from jitxlib.parts import Capacitor
 from jitxlib.protocols.serial import I2C, SPI
 from jitxlib.symbols.box import BoxSymbol, Column, PinGroup, Row
 
@@ -34,8 +38,8 @@ class LIS3DHTR(Circuit):
         }
         SPC = Port()
         GND = Port()
-        SDO = Port()
-        SA0 = Port()
+        SDA_SDI = Port()  # I2C SDA, SPI SDI (pin 6)
+        SDO_SA0 = Port()  # SPI SDO, I2C SA0 (pin 7)
         CS = Port()
         INT = {
             1: Port(),
@@ -81,8 +85,8 @@ class LIS3DHTR(Circuit):
                     NC[1]: landpattern.p[3],
                     SPC: landpattern.p[4],
                     GND: [landpattern.p[5], landpattern.p[12]],
-                    SDO: landpattern.p[6],
-                    SA0: landpattern.p[7],
+                    SDA_SDI: landpattern.p[6],
+                    SDO_SA0: landpattern.p[7],
                     CS: landpattern.p[8],
                     INT[2]: landpattern.p[9],
                     RES: landpattern.p[10],
@@ -99,7 +103,7 @@ class LIS3DHTR(Circuit):
             rows=[
                 Row(
                     right=PinGroup(INT[2], RES, INT[1], ADC[3], VDD, ADC[2], ADC[1]),
-                    left=PinGroup(SPC, SDO, SA0, CS),
+                    left=PinGroup(SPC, SDA_SDI, SDO_SA0, CS),
                 )
             ],
             columns=[
@@ -117,27 +121,39 @@ class LIS3DHTR(Circuit):
     int = Port(), Port()
     vio = Port()
 
-    def __init__(self):
-        self.bypasses = [
-            Capacitor(capacitance=10e-6).insert(self.acc.VDD, self.acc.GND),
-            Capacitor(capacitance=0.1e-6).insert(self.acc.VDD_IO, self.acc.GND),
-        ]
+    def __init__(self) -> None:
+        # STMicroelectronics, "LIS3DH", datasheet DocID17530 Rev 2, December
+        # 2016, Section 4 and Figure 5: 100 nF ceramic and 10 uF on Vdd (pin 14).
+        self.vdd_bypass = Capacitor(capacitance=(10e-6) * F)
+        self.vdd_bypass_100n = Capacitor(capacitance=(0.1e-6) * F)
+        self.vdd_io_bypass = Capacitor(capacitance=(0.1e-6) * F)
 
         # promise pyright that we have the right ports
         assert self.spi.copi and self.spi.cipo and self.spi.cs
 
-        # unnamed nets
-        self.nets = [
-            self.power.Vp + self.acc.VDD,
-            self.power.Vn + self.acc.GND + self.acc.RES,
-            self.vio + self.acc.VDD_IO,
-            self.i2c.scl + self.spi.sck + self.acc.SPC,
-            self.i2c.sda + self.spi.cipo + self.acc.SDO,
-            self.spi.copi + self.acc.SA0,
-            self.spi.cs + self.acc.CS,
-            *(a + b for a, b in zip(self.adc, self.acc.ADC.values(), strict=False)),
-            *(a + b for a, b in zip(self.int, self.acc.INT.values(), strict=False)),
-        ]
+        self.VDD = (
+            self.power.Vp + self.acc.VDD + self.vdd_bypass.p1 + self.vdd_bypass_100n.p1
+        )
+        self.GND = (
+            self.power.Vn
+            + self.acc.GND
+            + self.acc.RES
+            + self.vdd_bypass.p2
+            + self.vdd_bypass_100n.p2
+            + self.vdd_io_bypass.p2
+        )
+        self.VDD_IO = self.vio + self.acc.VDD_IO + self.vdd_io_bypass.p1
+        self.SCL_SPC = self.i2c.scl + self.spi.sck + self.acc.SPC
+        # LIS3DH data sheet, Table 2: pin 6 is I2C SDA and SPI SDI (peripheral
+        # in), pin 7 is SPI SDO (peripheral out) and I2C SA0.
+        self.SDA_SDI = self.i2c.sda + self.spi.copi + self.acc.SDA_SDI
+        self.SDO_SA0 = self.spi.cipo + self.acc.SDO_SA0
+        self.CS = self.spi.cs + self.acc.CS
+        self.ADC1 = self.adc[0] + self.acc.ADC[1]
+        self.ADC2 = self.adc[1] + self.acc.ADC[2]
+        self.ADC3 = self.adc[2] + self.acc.ADC[3]
+        self.INT1 = self.int[0] + self.acc.INT[1]
+        self.INT2 = self.int[1] + self.acc.INT[2]
 
         self.lis3dh = SchematicGroup()
 

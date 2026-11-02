@@ -11,11 +11,9 @@ Usage:
 >>> class MyCircuit(Circuit):
 ...     def __init__(self):
 ...         self.button = TactileSwitch()
-...         # Connect switch terminals
-...         self.nets = [
-...             self.button.p[1] + some_signal,
-...             self.button.p[2] + another_signal
-...         ]
+...         # Connect switch terminals, one field per signal
+...         self.BUTTON = self.button.p[1] + some_signal
+...         self.GND = self.button.p[2] + another_signal
 """
 
 from jitx.anchor import Anchor

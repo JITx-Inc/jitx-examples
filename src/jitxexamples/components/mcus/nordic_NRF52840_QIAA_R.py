@@ -1,5 +1,9 @@
-from collections.abc import Sequence
+"""
+NRF52840-QIAA-R
+"""
+
 from itertools import chain
+
 from jitx import Landpattern
 from jitx.anchor import Anchor
 from jitx.circuit import Circuit, SchematicGroup
@@ -7,18 +11,17 @@ from jitx.common import ADC, GPIO, Power, Timer
 from jitx.component import Component
 from jitx.container import inline
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
-from jitx.interval import Interval
 from jitx.landpattern import Pad, PadMapping
-from jitx.net import Net, Port, provide
+from jitx.net import Net, Port, ShortTrace, provide
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolyline, Circle, Polygon, Polyline, Text
-
-from jitxlib.parts import Inductor, Capacitor
-from jitxlib.symbols.box import BoxSymbol, Column, PinGroup, Row
-from jitxlib.protocols.serial import I2C, SPI, UART, SWD
+from jitx.units import A, F, H, Hz
+from jitxlib.parts import AtLeast, Capacitor, Inductor
+from jitxlib.protocols.serial import I2C, SPI, SWD, UART
 from jitxlib.protocols.usb import USB2Connector
+from jitxlib.symbols.box import BoxSymbol, Column, PinGroup, Row
 
-from jitxexamples.components.transistors.seiko_epson_TSX_3225_32_0000MF10Z_W6 import (
+from jitxexamples.components.crystals.seiko_epson_TSX_3225 import (
     TSX_3225_32_0000MF10Z_W6,
 )
 
@@ -46,15 +49,11 @@ class LFOscillator(Port):
 
 
 class NRF52840_QIAA_R(Circuit):
-    """
-    NRF52840 reference module.
+    """NRF52840 reference module.
 
-    Args:
-        lfo: include a 32.768kHz resonator in the design
-        antenna: include an antenna and matching circuit in the design
-        power_config: circuit configuration from
-            https://infocenter.nordicsemi.com/index.jsp?topic=%2Fps_nrf52840%2Fref_circuitry.html
-            (currently supports 5 and 6)
+    ``lfo`` includes a 32.768 kHz resonator, and ``antenna`` includes an antenna
+    and matching circuit. ``power_config`` selects reference circuitry option 5
+    or 6 from the Nordic Semiconductor product specification.
     """
 
     vin = Power()
@@ -394,17 +393,19 @@ class NRF52840_QIAA_R(Circuit):
             }
         ]
 
-    def __init__(self, *, lfo=True, antenna=True, power_config=5):
+    def __init__(
+        self, *, lfo: bool = True, antenna: bool = True, power_config: int = 5
+    ) -> None:
         mcu = self.mcu
 
         self.GND = self.vin.Vn + mcu.VSS + mcu.VSS_PA
-        self.nets = []
-        self.bypasses: Sequence[Capacitor] = []
+        self.bypasses: list[Capacitor] = []
+        self.bypass_short_traces = []
         match power_config:
             case 5:
                 self.usb = USB2Connector()
                 self.GND += self.usb.vbus.Vn
-                self.nets += [mcu.VBUS + self.usb.vbus.Vp]
+                self.VBUS = mcu.VBUS + self.usb.vbus.Vp
                 self.power_config = []
                 for pin, cap in [
                     (mcu.DEC1, 100e-9),
@@ -420,29 +421,31 @@ class NRF52840_QIAA_R(Circuit):
                     (mcu.VDD[3], 1e-6),
                     (mcu.VDD[4], 1e-6),
                 ]:
-                    self.bypasses.append(
-                        Capacitor(capacitance=cap).insert(
-                            pin, self.GND, short_trace=True
-                        )
+                    bypass = Capacitor(capacitance=(cap) * F)
+                    self.bypasses.append(bypass)
+                    self.bypass_short_traces.extend(
+                        [
+                            ShortTrace(pin, bypass.p1),
+                            ShortTrace(bypass.p2, self.GND.port),
+                        ]
                     )
 
                 self.pwr_ind = Inductor(
                     mounting="smd",
-                    inductance=10e-6,
-                    current_rating=Interval(50e-3),
+                    inductance=(10e-6) * H,
+                    max_current=AtLeast(50e-3 * A),
                 )
                 self.filt_ind = Inductor(
                     mounting="smd",
-                    inductance=15e-9,
-                    self_resonant_frequency=2e9,
+                    inductance=(15e-9) * H,
+                    self_resonant_frequency=AtLeast(2e9 * Hz),
                     material_core="ceramic",
                 )
-                self.nets += [
-                    mcu.DCCH + self.pwr_ind.p1,
-                    self.pwr_ind.p2 + self.filt_ind.p1,
-                    self.filt_ind.p2 + mcu.DEC4 + mcu.DEC6,
-                ]
-                self.nets.append(Net(mcu.VDD[0:4] + [mcu.VDDH, self.vin.Vp]))
+                # DCCH -> 10 uH -> DCDC_OUT -> 15 nH -> DEC4
+                self.DCCH = mcu.DCCH + self.pwr_ind.p1
+                self.DCDC_OUT = self.pwr_ind.p2 + self.filt_ind.p1
+                self.DEC4 = self.filt_ind.p2 + mcu.DEC4 + mcu.DEC6
+                self.VDD = Net([*mcu.VDD, mcu.VDDH, self.vin.Vp])
             case 6:
                 for pin, cap in [
                     (mcu.DEC1, 100e-9),
@@ -455,10 +458,13 @@ class NRF52840_QIAA_R(Circuit):
                     (mcu.VDD[2], 0.1e-6),
                     (mcu.VDD[3], 1e-6),
                 ]:
-                    self.bypasses.append(
-                        Capacitor(capacitance=cap).insert(
-                            pin, self.GND, short_trace=True
-                        )
+                    bypass = Capacitor(capacitance=(cap) * F)
+                    self.bypasses.append(bypass)
+                    self.bypass_short_traces.extend(
+                        [
+                            ShortTrace(pin, bypass.p1),
+                            ShortTrace(bypass.p2, self.GND.port),
+                        ]
                     )
 
                 mcu.DECUSB.no_connect()
@@ -466,8 +472,12 @@ class NRF52840_QIAA_R(Circuit):
                 mcu.DCCH.no_connect()
                 mcu.DCC.no_connect()
 
-                dec6cap = Capacitor(capacitance=0.1e-6).insert(
-                    mcu.DEC6, self.GND, short_trace=True
+                dec6cap = Capacitor(capacitance=(0.1e-6) * F)
+                self.bypass_short_traces.extend(
+                    [
+                        ShortTrace(mcu.DEC6, dec6cap.p1),
+                        ShortTrace(dec6cap.p2, self.GND.port),
+                    ]
                 )
                 dec6cap.schematic_x_out = True
                 dec6cap.soldered = False
@@ -476,22 +486,25 @@ class NRF52840_QIAA_R(Circuit):
                 self.bypasses.append(dec6cap)
 
                 self.GND += mcu.VBUS
-                self.nets += [mcu.DEC4 + mcu.DEC6, mcu.VDDH + self.vin.Vp]
+                self.DEC4 = mcu.DEC4 + mcu.DEC6
                 mcu.Dp.no_connect()
                 mcu.Dn.no_connect()
-                self.nets.append(Net(mcu.VDD[0:4] + [self.vin.Vp]))
+                self.VDD = Net([*mcu.VDD, mcu.VDDH, self.vin.Vp])
             case _:
                 raise ValueError(f"Invalid power config: {power_config}")
 
-        self.bypasses.append(
-            Capacitor(capacitance=0.1e-6).insert(mcu.DEC2, self.GND, short_trace=True)
+        dec2cap = Capacitor(capacitance=(0.1e-6) * F)
+        self.bypasses.append(dec2cap)
+        self.bypass_short_traces.extend(
+            [
+                ShortTrace(mcu.DEC2, dec2cap.p1),
+                ShortTrace(dec2cap.p2, self.GND.port),
+            ]
         )
 
         self.hfosc = TSX_3225_32_0000MF10Z_W6()
-        self.nets += [
-            mcu.XC1 + self.hfosc.OSC1,
-            mcu.XC2 + self.hfosc.OSC2,
-        ]
+        self.XC1 = mcu.XC1 + self.hfosc.OSC1
+        self.XC2 = mcu.XC2 + self.hfosc.OSC2
         self.GND += self.hfosc.GND0 + self.hfosc.GND1
         self.hfosc.add_load_caps(self.GND)
 

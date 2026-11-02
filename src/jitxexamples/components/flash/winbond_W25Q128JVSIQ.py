@@ -6,21 +6,22 @@ Component definition for Winbond W25Q128JVSIQ 128Mbit Serial Flash Memory
 
 from jitx import Toleranced
 from jitx.anchor import Anchor
-from jitx.component import Component
 from jitx.circuit import Circuit
 from jitx.common import Power
+from jitx.component import Component
 from jitx.landpattern import PadMapping
 from jitx.model3d import Model3D
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Circle, Text
 from jitx.symbol import Direction, Pin, Symbol, SymbolMapping
+from jitx.units import F
 from jitxlib.landpatterns.generators.soic import SOIC
 from jitxlib.landpatterns.leads import LeadProfile, SMDLead
 from jitxlib.landpatterns.leads.protrusions import SmallGullWingLeads
 from jitxlib.landpatterns.package import RectanglePackage
-from jitxlib.protocols.serial import WideSPI
 from jitxlib.parts import Capacitor
+from jitxlib.protocols.serial import WideSPI
 
 
 class SymbolW25Q128JVSIQTR(Symbol):
@@ -176,35 +177,35 @@ class W25Q128(Circuit):
     # Quad SPI interface for full 4-wire operation
     qspi = WideSPI.quad(cs=True)
 
-    def __init__(self):
+    def __init__(self) -> None:
         # Instantiate the W25Q128 flash memory
         self.flash = W25Q128JVSIQ()
 
         # 4.7µF bypass capacitor for power supply decoupling
         # Using X7R dielectric for good temperature stability
-        self.bypass_cap = Capacitor(capacitance=4.7e-6).insert(
-            self.flash.VCC, self.flash.GND, short_trace=True
-        )
-
-        # Net connections
-        nets_list = [
-            # Power connections
-            self.power.Vp + self.flash.VCC,
-            self.power.Vn + self.flash.GND,
-            # Quad SPI interface connections
-            # Connect all 4 data lines for full quad SPI operation
-            self.qspi.data[0] + self.flash.DI,  # Data line 0 (MOSI in standard SPI)
-            self.qspi.data[1] + self.flash.DO,  # Data line 1 (MISO in standard SPI)
-            self.qspi.data[2] + self.flash.IO2,  # Data line 2 (for quad SPI)
-            self.qspi.data[3] + self.flash.IO3,  # Data line 3 (for quad SPI)
-            self.qspi.sck + self.flash.CLK,  # Serial Clock
+        self.bypass_cap = Capacitor(capacitance=(4.7e-6) * F)
+        self.bypass_cap_short_traces = [
+            ShortTrace(self.flash.VCC, self.bypass_cap.p1),
+            ShortTrace(self.bypass_cap.p2, self.flash.GND),
         ]
+
+        # Power connections
+        self.VCC = self.power.Vp + self.flash.VCC
+        self.GND = self.power.Vn + self.flash.GND
+        # Quad SPI interface connections
+        # Connect all 4 data lines for full quad SPI operation: IO0 is DI
+        # (MOSI in standard SPI), IO1 is DO (MISO in standard SPI)
+        self.IO = [
+            self.qspi.data[0] + self.flash.DI,
+            self.qspi.data[1] + self.flash.DO,
+            self.qspi.data[2] + self.flash.IO2,
+            self.qspi.data[3] + self.flash.IO3,
+        ]
+        self.CLK = self.qspi.sck + self.flash.CLK  # Serial Clock
 
         # Add chip select connection if available
         if self.qspi.cs is not None:
-            nets_list.append(self.qspi.cs + self.flash.CS_NOT)
-
-        self.nets = nets_list
+            self.CS_NOT = self.qspi.cs + self.flash.CS_NOT
 
 
 # Device alias for easy import following JITX patterns

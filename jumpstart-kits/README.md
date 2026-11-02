@@ -9,16 +9,14 @@ landing page itself.
 
 ## What belongs here
 
-Learner-facing narrative and collateral only: runbooks, reference companions, supplied inputs, and
-decks. Importable solution code lives under `src/jitxexamples/jumpstart_kits/` where the repo's
+Learner-facing narrative and collateral only: runbooks, reference companions, and supplied inputs.
+Kits carry no presentation decks. Importable solution code lives under `src/jitxexamples/jumpstart_kits/` where the repo's
 ruff, pyright, and pytest gates cover it.
 
-Internal material stays in `internal/` at the repo root: requirement specs, program TODOs, and
-deck-production tooling. That tree is excluded from the sdist and from the public mirror, so it
-reaches no deployment surface. **Every `.md` placed here, by contrast, will be published to
-docs.jitx.com and into the site-root `llms.txt`** once the docs build picks up this section — so
-write everything here as public from the outset, and never link from here into `internal/` (the
-link would 404 on the docs site).
+**Every `.md` placed here will be published to docs.jitx.com and into the site-root `llms.txt`**
+once the docs build picks up this section, so write everything here as public from the outset,
+and link only to pages and files that are published too (any other link would 404 on the docs
+site).
 
 ## Structure
 
@@ -32,7 +30,7 @@ link to one child.
 
 ## Linking collateral, and the one place Sphinx syntax is needed
 
-A plain relative markdown link is all you need for a deck, a PDF, or a supplied input: the docs build
+A plain relative markdown link is all you need for a PDF or a supplied input: the docs build
 turns a link to a **non-document** file into a real download, served from
 `_downloads/<sha256-of-its-bytes>/<name>`.
 

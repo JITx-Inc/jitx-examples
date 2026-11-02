@@ -1,15 +1,15 @@
 from jitx.container import inline
 from jitx.test import TestCase
 from jitx.circuit import Circuit
-from jitx.sample import SampleDesign
-from jitxlib.parts.query_api import CapacitorQuery, ResistorQuery
+from tests.parts import PartsTestDesign
+from jitxlib.parts import CapacitorQuery, ResistorQuery
 
 from jitxexamples.components.opamps.texas_instruments_TLV314IDBVR import (
     Device as TLV314IDBVRDevice,
 )
 
 
-class TLV314IDBVRDesign(SampleDesign):
+class TLV314IDBVRDesign(PartsTestDesign):
     _capacitor_defaults = CapacitorQuery(case=["0402", "0603"])
     _resistor_defaults = ResistorQuery(case=["0402"])
 

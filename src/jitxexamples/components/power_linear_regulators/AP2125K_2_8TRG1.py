@@ -11,13 +11,14 @@ from jitx.anchor import Anchor
 from jitx.circuit import Circuit
 from jitx.common import Power
 from jitx.component import Component
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.primitive import Polygon, Text
 from jitx.symbol import Direction, Pin, Symbol
+from jitx.units import F
+from jitxlib.landpatterns.generators.sot import SOT23_5, SOTLeadProfile, T
 from jitxlib.landpatterns.package import RectanglePackage
 from jitxlib.parts import Capacitor
-from jitxlib.symbols.box import BoxSymbol, Row, PinGroup
-from jitxlib.landpatterns.generators.sot import SOT23_5, T, SOTLeadProfile
+from jitxlib.symbols.box import BoxSymbol, PinGroup, Row
 
 
 class AP2125K_2_8TRG1_Symbol(Symbol):
@@ -91,26 +92,27 @@ class AP2125K_2_8TRG1Circuit(Circuit):
     vout = Power()
     EN = Port()
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.reg = AP2125K_2_8TRG1()
 
-        self.nets = [
-            self.vin.Vp + self.reg.VIN,
-            self.vin.Vn + self.reg.GND,
-            self.vout.Vp + self.reg.VOUT,
-            self.vout.Vn + self.reg.GND,
-            self.EN + self.reg.EN,
-        ]
+        self.VIN = self.vin.Vp + self.reg.VIN
+        self.GND = self.vin.Vn + self.vout.Vn + self.reg.GND
+        self.VOUT = self.vout.Vp + self.reg.VOUT
+        self.en = self.EN + self.reg.EN
 
         # Input Capacitor (1uF)
-        self.cin = Capacitor(capacitance=1e-6).insert(
-            self.reg.VIN, self.reg.GND, short_trace=True
-        )
+        self.cin = Capacitor(capacitance=(1e-6) * F)
+        self.cin_short_traces = [
+            ShortTrace(self.reg.VIN, self.cin.p1),
+            ShortTrace(self.cin.p2, self.reg.GND),
+        ]
 
         # Output Capacitor (1uF)
-        self.cout = Capacitor(capacitance=1e-6).insert(
-            self.reg.VOUT, self.reg.GND, short_trace=True
-        )
+        self.cout = Capacitor(capacitance=(1e-6) * F)
+        self.cout_short_traces = [
+            ShortTrace(self.reg.VOUT, self.cout.p1),
+            ShortTrace(self.cout.p2, self.reg.GND),
+        ]
 
         self.reg.NC.no_connect()
 

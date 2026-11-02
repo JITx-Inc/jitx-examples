@@ -1,15 +1,13 @@
-# This file is generated based on the parts database query below:
-#     from jitx.circuit import Circuit
-#     from jitxlib.parts import Part
-#     class Example(Circuit):
-#         def __init__(self):
-#            self.part = Part(mpn="KT-0603W", manufacturer="Hubei_KENTO_Elec")
-#
-# File Location: components/Hubei_KENTO_Elec/KT_0603W.py
+"""
+KT-0603W
+"""
+
+# File Location: src/jitxexamples/components/leds/KT_0603W.py
 # To use this component:
-#     from .components.Hubei_KENTO_Elec import KT_0603W
+#     from jitx.circuit import Circuit
+#     from jitxexamples.components.leds.KT_0603W import KT_0603W
 #     class Example(Circuit):
-#         u1 = KT_0603W.Device()
+#         u1 = KT_0603W()
 from jitx.anchor import Anchor
 from jitx.component import Component
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask

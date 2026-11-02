@@ -1,3 +1,7 @@
+"""
+CR2032-BS-6-1
+"""
+
 from jitx.anchor import Anchor
 from jitx.component import Component
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask

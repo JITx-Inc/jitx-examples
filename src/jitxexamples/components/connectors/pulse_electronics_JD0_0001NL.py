@@ -86,17 +86,15 @@ class JD0_0001NL(Circuit):
     J: JD0_0001NL.Component
     """The actual connector component instance with landpattern."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.J = JD0_0001NL.Component()
 
-        self.nets = [
-            self.CT + self.J.CT,
-            self.ISO_CT + self.J.ISO_CT,
-            self.LED_G.a + self.J.LED_G_A,
-            self.LED_G.c + self.J.LED_G_C,
-            self.LED_Y.a + self.J.LED_Y_A,
-            self.LED_Y.c + self.J.LED_Y_C,
-        ]
+        self.ct = self.CT + self.J.CT
+        self.iso_ct = self.ISO_CT + self.J.ISO_CT
+        self.LED_G_A = self.LED_G.a + self.J.LED_G_A
+        self.LED_G_C = self.LED_G.c + self.J.LED_G_C
+        self.LED_Y_A = self.LED_Y.a + self.J.LED_Y_A
+        self.LED_Y_C = self.LED_Y.c + self.J.LED_Y_C
         self.shield = Net([self.SHIELD])
 
         for p in self.J.SHIELD.values():

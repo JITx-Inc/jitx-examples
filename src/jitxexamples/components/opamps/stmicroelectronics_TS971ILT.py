@@ -1,3 +1,7 @@
+"""
+TS971ILT
+"""
+
 from jitx.anchor import Anchor
 from jitx.circuit import Circuit
 from jitx.common import Power
@@ -98,14 +102,12 @@ class TS971ILT(Circuit):
     supply = Power()
     amp = OpAmp()
 
-    def __init__(self):
-        self.nets = [
-            self.supply.Vp + self.IC.VCC,
-            self.supply.Vn + self.IC.VDD,
-            self.amp.INp + self.IC.INp,
-            self.amp.INn + self.IC.INn,
-            self.amp.OUT + self.IC.OUT,
-        ]
+    def __init__(self) -> None:
+        self.VCC = self.supply.Vp + self.IC.VCC
+        self.VDD = self.supply.Vn + self.IC.VDD
+        self.INp = self.amp.INp + self.IC.INp
+        self.INn = self.amp.INn + self.IC.INn
+        self.OUT = self.amp.OUT + self.IC.OUT
 
 
 Device: type[TS971ILT] = TS971ILT

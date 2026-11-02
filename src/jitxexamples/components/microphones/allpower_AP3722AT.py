@@ -1,3 +1,7 @@
+"""
+AP3722AT
+"""
+
 from jitx.anchor import Anchor
 from jitx.circuit import Circuit
 from jitx.common import Power
@@ -5,10 +9,11 @@ from jitx.component import Component
 from jitx.container import inline
 from jitx.feature import Courtyard, Custom, Paste, Silkscreen, Soldermask
 from jitx.landpattern import Landpattern, Pad
-from jitx.net import Port
+from jitx.net import Port, ShortTrace
 from jitx.shapes.composites import rectangle
 from jitx.shapes.primitive import Arc, ArcPolygon, ArcPolyline, Circle, Polyline, Text
 from jitx.symbol import Direction, Pin, Symbol
+from jitx.units import F
 from jitxlib.parts import Capacitor
 
 
@@ -94,17 +99,16 @@ class AP3722AT(Circuit):
     vin = Power()
     out = Port()
 
-    def __init__(self):
-        self.nets = [
-            self.vin.Vp + self.mic.VDD,
-            self.vin.Vn + self.mic.GND[0],
-            self.mic.GND[0] + self.mic.GND[1],
-            self.out + self.mic.OUT,
-        ]
+    def __init__(self) -> None:
+        self.VDD = self.vin.Vp + self.mic.VDD
+        self.GND = self.vin.Vn + self.mic.GND[0] + self.mic.GND[1]
+        self.OUT = self.out + self.mic.OUT
 
-        self.byp = Capacitor(capacitance=0.1e-6).insert(
-            self.mic.VDD, self.mic.GND[0], short_trace=True
-        )
+        self.byp = Capacitor(capacitance=(0.1e-6) * F)
+        self.byp_short_traces = [
+            ShortTrace(self.mic.VDD, self.byp.p1),
+            ShortTrace(self.byp.p2, self.mic.GND[0]),
+        ]
 
 
 Device: type[AP3722AT] = AP3722AT

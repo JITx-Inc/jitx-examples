@@ -227,7 +227,7 @@ class BGALink(Circuit):
     end terminal component is needed.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         substrate = jitx.current.substrate
         assert isinstance(substrate, BGAEscapeSubstrate)
 
@@ -242,7 +242,8 @@ class BGALink(Circuit):
         # a named list member of this Circuit (the JITX objects
         # themselves, not records of them).
         self.lanes: list[EscapeLane] = []
-        signal_nets: list[Net] = []
+        # Diff-pair nets indexed like ``self.bga.lanes``: TX[pair][lane].
+        tx_nets: list[list[Net]] = []
         signal_vias: list[Via] = []
         signal_via_attachments: list[PortAttachment] = []
         pair_points: list[PairPoint] = []
@@ -256,6 +257,7 @@ class BGALink(Circuit):
             signal_layer = bga.signal_layer_for_pair(pair_index)
             spec = substrate.spec_for_signal_layer(signal_layer)
             via_cls = substrate.signal_via[signal_layer]
+            tx_nets.append([])
             for lane_index, col in enumerate(bga.signal_cols_for_pair(pair_index)):
                 tx_pair = self.bga.lanes[pair_index][lane_index]
                 p_pad = bga.ball_center(bottom_row, col)
@@ -275,7 +277,7 @@ class BGALink(Circuit):
                 # Diff-pair Net + stripline tag.
                 net = Net([tx_pair])
                 StriplineDiffPairTag().assign(net)
-                signal_nets.append(net)
+                tx_nets[pair_index].append(net)
 
                 # Signal-via attachments at the two BGA pad coordinates.
                 # The Vias also accumulate into ``signal_vias``: reaching
@@ -369,7 +371,7 @@ class BGALink(Circuit):
                 )
                 spec.deskew_antipad_fence_tag.assign(dp)
                 deskew_fence_pours.append(dp)
-        self.signal_nets = signal_nets
+        self.TX = tx_nets
         self.signal_vias = signal_vias
         self.signal_via_attachments = signal_via_attachments
         self.pair_points = pair_points
