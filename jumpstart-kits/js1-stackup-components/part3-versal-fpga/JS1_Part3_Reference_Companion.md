@@ -1,4 +1,4 @@
-<!-- Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3) · rev 1.2 · 2026-09-08 -->
+<!-- Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3) · rev 1.3 · 2026-09-14 -->
 
 # Versal FPGA from the Vendor Pin File — Reference Companion (JS1 · Part 3)
 
@@ -34,7 +34,7 @@ Ground truth is two AMD documents, both fetched during the run and never committ
 | `landpattern.py` | The 37×37 BGA land pattern from AM013 values, with a public `get_pad(row, column)` adapter. |
 | `symbols.py` | Partition policy: ~43 schematic boxes, one per bank / GT quad, rails chunked at ≤ 64 pins. |
 | `bundles.py` + `circuit.py` | `GTMQuad` (4 lanes + 2 refclks) and `XCVP1002Circuit`: 31 supply rails as `Power` ports, three ground domains, six GTM quads wired as bundles. |
-| Tests + two buildable designs | Offline invariants (counts, spot-checked balls, symbol coverage, mapping bijectivity, circuit roster) and non-test `jitx build` smoke targets for the component and the wrapped circuit. |
+| Tests + two buildable designs | Offline invariants (counts, spot-checked balls, symbol coverage, mapping bijectivity, circuit roster) and non-test `jitx design build` smoke targets for the component and the wrapped circuit. |
 
 Reference solution: the `jitxexamples` package, module
 [`jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga`](https://github.com/JITx-Inc/jitx-examples/tree/main/src/jitxexamples/jumpstart_kits/js1_stackup_components/versal_fpga).
@@ -75,9 +75,9 @@ wrapper exposes them as pass-through ports.
 
 - Generator reconciliation: parsed rows = file footer = **1369**, unique balls, full grid; the
   committed module regenerates **byte-identically** (`--check`).
-- 19 tests + 198 subtests pass offline on the jitx 4.4 line, including ~10 hand-read
-  ball spot-checks spanning the grid corners and every bank type, symbol coverage (every port in
-  exactly one box), and mapping bijectivity. Both non-test designs `jitx build` with `status: ok`.
+- The offline suite passes on the jitx 4.4 line, including hand-read ball spot-checks spanning the
+  grid corners and every bank type, symbol coverage (every port in exactly one box), and mapping
+  bijectivity. Both non-test designs `jitx design build` with `status: ok`.
 - Every one of the 1369 balls was **independently re-checked against the AMD file** by a
   13-agent review fan-out (grid slices plus rails / GTM / symbols / conventions audits) — zero
   mismatches.
@@ -97,8 +97,8 @@ python -m jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.tools.g
     .context/xcvp1002nfvi1369pkg.txt --report      # inventory + reconciliation
 python -m jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.tools.generate_pinout \
     .context/xcvp1002nfvi1369pkg.txt --check       # committed module is regeneration-exact
-jitx build jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main.VersalFPGADesign
-jitx build jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main.VersalFPGACircuitDesign
+jitx design build jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main.VersalFPGADesign
+jitx design build jitxexamples.jumpstart_kits.js1_stackup_components.versal_fpga.main.VersalFPGACircuitDesign
 ```
 
 Expect roughly **2–3 hours** end to end for the full runbook with an agent (most of it

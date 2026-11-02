@@ -1,5 +1,5 @@
 <!--
-JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.4 · 2026-09-08
+JITX Stackup-from-Fab-CSV Runbook (JS1 · Part 1) · rev 1.5 · 2026-09-14
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 together with your stackup CSV, and tell the agent to follow it. Complete the JS0 Setup Runbook
 first. START A NEW AGENT SESSION before you begin — a skills install only takes effect in a
@@ -40,10 +40,10 @@ $env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install jitx
 jitx project dependencies upgrade
 jitx runtime start --background
-jitx find
+jitx design find
 ```
 
-Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`.** The two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `js1-hdi-stackup` builds as `jitx build js1_hdi_stackup.main.Js1HdiStackup`. This smoke test must succeed before you write any code of your own. If it fails, stop and tell me; do not start on the stackup. Then create `tests/`, add `pytest` and `pyright`, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
+Build the seeded non-test target from `jitx design find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx design find`.** The two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `js1-hdi-stackup` builds as `jitx design build js1_hdi_stackup.main.Js1HdiStackup`. This smoke test must succeed before you write any code of your own. If it fails, stop and tell me; do not start on the stackup. Then create `tests/`, add `pytest` and `pyright`, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
 
 **2 · Read the report before writing any code.**
 Parse the CSV and **restate it back to me** per the skill's Source Documents rules; flag whatever is ambiguous.
@@ -63,9 +63,9 @@ Drive the skill's **"From a fab impedance table"** pattern over the IMPEDANCE se
 **7 · Verify.**
 Run `pyright` — expect **zero errors and zero suppressions**; a `pyright: ignore` you feel you need is a finding to report, not a way to reach zero. Write CSV-sourced tests per the skill's **"Verifying a Substrate Against Its Source"**.
 
-Then `pytest`. Before you build, **wire the substrate into a design** per the skill's **"Smoke-Test Wiring (Board and Design)"** — step 1's seeded target is not acceptance here, and the skill says why. Then `jitx build <non-test design target>`, one design at a time. Read all of `jitx find`'s output, not just its design list — treat any `import failed:` line as a failure (make `tests/` a package with an `__init__.py` if your tests import shared helpers), and do not build designs discovered under `tests/`; those are pytest fixtures, not smoke-test targets. Finally run **`jitx-code-review`**, fix what it finds, re-run, and report every result to me — including the skill's filled **Substrate completeness check** block.
+Then `pytest`. Before you build, **wire the substrate into a design** per the skill's **"Smoke-Test Wiring (Board and Design)"** — step 1's seeded target is not acceptance here, and the skill says why. Then `jitx design build <non-test design target>`, one design at a time. Read all of `jitx design find`'s output, not just its design list — treat any `import failed:` line as a failure (make `tests/` a package with an `__init__.py` if your tests import shared helpers), and do not build designs discovered under `tests/`; those are pytest fixtures, not smoke-test targets. Finally run **`jitx-code-review`**, fix what it finds, re-run, and report every result to me — including the skill's filled **Substrate completeness check** block.
 
-A good result is: `pyright` reports zero errors, `pytest` is green with every assertion sourced from the CSV, `jitx build` of the design that **binds the substrate** completes and writes its design directory, and `jitx-code-review` returns no unresolved findings. Anything short of that is a failure. Report it to me and stop; do not work around it.
+A good result is: `pyright` reports zero errors, `pytest` is green with every assertion sourced from the CSV, `jitx design build` of the design that **binds the substrate** completes and writes its design directory, and `jitx-code-review` returns no unresolved findings. Anything short of that is a failure. Report it to me and stop; do not work around it.
 
 **8 · [HUMAN] Close the loop — re-issue the report.**
 Now show me the substrate regenerates from the report. **Invite me to change the CSV** — suggest I say: *"the fab came back on the through-hole again — 0.400 mm finished hole this time; re-issue the report and tell me what moved."* **Wait for me to ask.**
@@ -74,9 +74,9 @@ Edit the CSV only with values I give you — both unit columns for the hole, the
 
 **If I ask for a dielectric change instead, stop.** A dielectric change re-solves the controlled-impedance line widths, and that solve belongs to the fab — the CSV carries its result, not the model that produced it. Report the affected trace widths as blocked pending re-solved impedance rows; do not estimate them, and do not carry the old widths forward as if they still held. If I supply re-solved rows, carry them through and report before → after for every changed width.
 
-If the rebuild ends in `status: error` with `EOF when reading a line`, the runtime asked *"Significant changes detected… Do you want to continue? [Y/n]"* on a stdin it does not have under `--background` — there is no flag to pre-answer it, and piping `y` into `jitx build` does not reach it. Tell me: I stop the background runtime and run `jitx runtime start` in my own terminal, answer the prompt there, and you rebuild.
+If the rebuild ends in `status: error` with `EOF when reading a line`, the runtime asked *"Significant changes detected… Do you want to continue? [Y/n]"* on a stdin it does not have under `--background` — there is no flag to pre-answer it, and piping `y` into `jitx design build` does not reach it. Tell me: I stop the background runtime and run `jitx runtime start` in my own terminal, answer the prompt there, and you rebuild.
 
-Then close this step the way step 7 closes: `pyright`, `pytest`, a `jitx build` of the design that binds the substrate, and **`jitx-code-review`**. The code and tests you wrote here have not been through that gate — step 7's review went stale the moment you edited anything.
+Then close this step the way step 7 closes: `pyright`, `pytest`, a `jitx design build` of the design that binds the substrate, and **`jitx-code-review`**. The code and tests you wrote here have not been through that gate — step 7's review went stale the moment you edited anything.
 
 ---
 
@@ -86,5 +86,5 @@ Then close this step the way step 7 closes: `pyright`, `pytest`, a `jitx build` 
 - Summed thickness matches the report's finished and overall thickness to the last printed digit; every annular ring and aspect ratio is within its capability limit, derived on the depth basis the NOTES state for that drill type.
 - No `Symmetric`, no invented SI models, and no **unlabeled** number that can't be pointed at a CSV row — reference-plane widths carry the skill's labeled default — and the STANDARD line/space recorded as prose, not as a structure.
 - The step-4 gate stopped after the stackup, with vias and routing structures written only after approval.
-- `pyright` clean with zero suppressions, `pytest` green from CSV-sourced tests, `jitx find` free of import errors, a design that **binds the substrate** builds, `jitx-code-review` findings fixed — run after step 8 as well as step 7 — and the skill's **Substrate completeness check** block filled in the completion report.
+- `pyright` clean with zero suppressions, `pytest` green from CSV-sourced tests, `jitx design find` free of import errors, a design that **binds the substrate** builds, `jitx-code-review` findings fixed — run after step 8 as well as step 7 — and the skill's **Substrate completeness check** block filled in the completion report.
 - A prompted CSV re-issue (the through-hole change) flows through to rebuilt code, with the aspect ratio and annular ring re-derived, re-checked against capability, and reported before → after — and the untouched impedance rows called out. A dielectric change without re-solved rows is reported as blocking the affected widths; no estimated width appears anywhere.

@@ -26,15 +26,15 @@ JITX design builds require an installed and running JITX runtime. From the proje
 
 ```bash
 jitx runtime start --background
-jitx find
-jitx build jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design
+jitx design find
+jitx design build jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design
 jitx ui open --board --design jitxexamples.demos.si_bga_optimization.bga_escape.bga_optimization_design
 ```
 
 Build the explicit non-test design target above; do not substitute similarly named targets from
-`test`, `tests`, or a test file listed by `jitx find`.
+`test`, `tests`, or a test file listed by `jitx design find`.
 
-`jitx build` writes its output to `<repo-root>/designs/<module.path.design_name>/`
+`jitx design build` writes its output to `<repo-root>/designs/<module.path.design_name>/`
 (`design-info/`, `temp/`, ...). That directory name is chosen by JITX, not by this repo, and is
 git-ignored — which is why the Python sources live in `src/jitxexamples/demos/` rather than
 `src/jitxexamples/designs/`.

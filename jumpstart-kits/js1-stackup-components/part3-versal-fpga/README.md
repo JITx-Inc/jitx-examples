@@ -37,13 +37,13 @@ add `GTMQuad` (4 lanes + 2 refclks) and `XCVP1002Circuit`: 31 `Power` rails, thr
 (GND / GND_SMON / GND_SENSE), and six GTM quad bundles wired through the generated pin groupings.
 
 **How we know it's right.** Reconciliation runs before any code: parsed rows = file footer = 1,369,
-unique balls, full 37×37 grid. Then 19 tests and 198 subtests on jitx 4.4 — hand-read ball
-spot-checks across grid corners and every bank type, symbol coverage, mapping bijectivity, circuit
-rail roster. Both designs, the component viewer and the wrapped circuit, build `status: ok` against
-the runtime. An independent 13-agent review re-checked all 1,369 balls against the AMD file with
-zero mismatches. A fresh agent replayed the runbook in an empty project and landed a ball map
-identical to the reference, 1,369/1,369 on name, row and column. And the geometry checks out: A1 ↔
-AU37 pad centers = 36 × 0.92 = 33.12 mm on both axes, exactly AM013's D1/E1.
+unique balls, full 37×37 grid. Then the offline suite on jitx 4.4 — hand-read ball spot-checks
+across grid corners and every bank type, symbol coverage, mapping bijectivity, circuit rail roster.
+Both designs, the component viewer and the wrapped circuit, build `status: ok` against the runtime.
+An independent 13-agent review re-checked all 1,369 balls against the AMD file with zero mismatches.
+A fresh agent replayed the runbook in an empty project and landed a ball map identical to the
+reference, 1,369/1,369 on name, row and column. And the geometry checks out: A1 ↔ AU37 pad centers =
+36 × 0.92 = 33.12 mm on both axes, exactly AM013's D1/E1.
 
 **Close the loop.** *"give me GTM quad 205 as a 4-lane bundle and tell me which power rails and bias
 pins it needs"* — answered live from the built circuit.

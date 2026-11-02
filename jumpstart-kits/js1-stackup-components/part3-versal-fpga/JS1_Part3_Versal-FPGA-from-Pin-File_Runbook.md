@@ -1,5 +1,5 @@
 <!--
-JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.4 · 2026-09-08
+JITX Versal FPGA from the Vendor Pin File Runbook (JS1 · Part 3) · rev 1.5 · 2026-09-14
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first.
 START A NEW AGENT SESSION before you begin — a skills install only takes effect in a session
@@ -16,7 +16,7 @@ boundary ports. At this pin count you do not transcribe a ball map: you **parse 
 machine-readable package pinout file and generate the component**, then verify the generation.
 The pinout file is the **only** ground truth for pin names, balls, and banks; AM013 (AMD's Versal
 packaging manual) is the only ground truth for package geometry. Estimate nothing; if the data doesn't say it, ask me. Follow
-the steps **in order**; nothing is done until it passes its checks and `jitx build <non-test design target>`. Where a step
+the steps **in order**; nothing is done until it passes its checks and `jitx design build <non-test design target>`. Where a step
 is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
 > **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI, `jitx-skills`
@@ -52,7 +52,7 @@ when a step names one, rather than working from the summary here.
 4. Partition the **schematic symbols by bank**.
 5. Wrap the component in a **circuit** that exposes rails, ground domains and GTM quads as
    JITX-native boundary ports.
-6. Verify at every stage: `pyright` → `pytest` → `jitx build <non-test design target>` → the `jitx-code-review` skill.
+6. Verify at every stage: `pyright` → `pytest` → `jitx design build <non-test design target>` → the `jitx-code-review` skill.
 
 ### What this task supplies
 
@@ -89,7 +89,7 @@ re-derive it. What is specific to *this* task:
 ```bash
 pyright                 # expect zero errors and zero suppressions
 pytest                  # the skill's test shape, plus this task's additions
-jitx build <non-test design target>  # both designs: component viewer + circuit wrapper
+jitx design build <non-test design target>  # both designs: component viewer + circuit wrapper
 ```
 
 A `pyright: ignore` you feel you need is a finding to report, not a way to reach zero. Run the
@@ -124,14 +124,14 @@ $env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install jitx
 jitx project dependencies upgrade
 jitx runtime start --background
-jitx find
+jitx design find
 ```
 
-Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from
-`test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the two halves are
+Build the seeded non-test target from `jitx design find` — ignore any target whose module path comes from
+`test`, `tests`, or a test file. **Take the target verbatim from `jitx design find`** — the two halves are
 derived differently, so don't assemble it yourself: the package is the directory lowercased with
 hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A
-directory called `js1-versal-fpga` builds as `jitx build js1_versal_fpga.main.Js1VersalFpga`. This
+directory called `js1-versal-fpga` builds as `jitx design build js1_versal_fpga.main.Js1VersalFpga`. This
 smoke test must succeed before you write any code of your own. If it fails, stop and tell me. Then
 prepare the project: create `tests/`, add `pytest` and `pyright` as dev dependencies, and `git init`
 if you want version control. Leave the seeded `.gitignore` as it is.
@@ -244,7 +244,7 @@ ports == assignments == pads, the per-rail counts from your step-4 inventory, ~1
 checks spanning `A1`, `AU37`, a double-letter row and one pin per bank type. Follow that section's
 cached-instantiation requirement rather than one build per assertion — at this pin count it is the
 difference between a suite of seconds and one that times out. Then: `pyright` →
-`pytest` → `jitx build <non-test symbol-viewer design target>` (expect `status: ok`) → run the
+`pytest` → `jitx design build <non-test symbol-viewer design target>` (expect `status: ok`) → run the
 `jitx-code-review` skill and fix findings. Commit when green.
 
 **10 · [HUMAN] Spot-check the balls.**
@@ -285,13 +285,13 @@ the sequence form is the first thing you will reach for and the first thing that
 
 And name the boundary rail ports distinctly from the net names (`pwr_vccint`, not `VCCINT`) — a
 named net colliding with a public port name fails only in the full runtime build ("Public name
-already in use"); `jitx build --dry` cannot see it.
+already in use"); `jitx design build --dry` cannot see it.
 
 **12 · Verify the circuit.**
 Extend the tests (rail roster + sizes, ground-domain separation, 6 quads × 20 topology links **and**,
 for at least one quad, that each link's two endpoints are the expected bundle sub-port and component
 ball — a count alone passes a lane- or polarity-swapped wiring; circuit design translates), then
-`pyright` → `pytest` → `jitx build <non-test circuit design target>` →
+`pyright` → `pytest` → `jitx design build <non-test circuit design target>` →
 `jitx-code-review`. Commit when green.
 
 **13 · [HUMAN] Close the loop.**
@@ -326,7 +326,7 @@ package, and it reaches me looking exactly like a verified one.
   single-ball ones — with three distinct ground domains, and all six GTM quads as bundles wired
   through the structural pin groupings; zero `getattr` anywhere.
 - `pyright` clean with no suppressions, `pytest` green — with the regeneration-idempotency test
-  confirmed to have *run*, not skipped — both non-test designs `jitx build` with `status: ok`, and a
+  confirmed to have *run*, not skipped — both non-test designs `jitx design build` with `status: ok`, and a
   `jitx-code-review` pass has run with findings fixed.
 - The component carries the skill's filled **Component completeness check** block, written next to
   the code, with the agreed `mpn` and what it identifies recorded in its `Identity` row.

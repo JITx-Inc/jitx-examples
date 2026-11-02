@@ -36,7 +36,7 @@ class TestParametricPassivesShowcase(TestCase):
 
     def test_live_request_value_labels(self):
         # The value label is what a reader sees in the BOM, and it is the one
-        # thing pyright, pytest and `jitx build` all ignore. Scaling to an SI
+        # thing pyright, pytest and `jitx design build` all ignore. Scaling to an SI
         # prefix divides by a power of ten, so an exact 100 nF part renders as
         # "99.99999999999999 nanofarad" unless the magnitude is rounded back.
         design = ParametricPassivesShowcase()

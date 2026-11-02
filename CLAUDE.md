@@ -10,7 +10,7 @@ specifically about working *with an agent* in this repo.
 
 ## Repo-specific rules
 
-- **`designs/` at the repo root is JITX build output, not source.** `jitx build` creates
+- **`designs/` at the repo root is JITX build output, not source.** `jitx design build` creates
   `<repo-root>/designs/<module.path.design_name>/` (`design-info/`, `temp/`, ...). That name is
   chosen by JITX. The Python demo sources live in `src/jitxexamples/demos/` for exactly this reason.
   Never add source under a root `designs/`, and never rename `demos/` back to `designs/`.
@@ -21,12 +21,12 @@ specifically about working *with an agent* in this repo.
   real design elements.
 
 - **`jitx.test.TestCase` does not need the JITX runtime.** It only activates the instantiation
-  context, so instantiating a `SampleDesign` works offline. Only `jitx build` / `jitx ui` need
-  `jitx runtime start`; `jitx build --dry <target>` translates a design without one.
+  context, so instantiating a `SampleDesign` works offline. Only `jitx design build` / `jitx ui` need
+  `jitx runtime start`; `jitx design build --dry <target>` translates a design without one.
 
 - **The repo targets the jitx 4.4 line, and public PyPI serves it.** `pyproject.toml` requires
   `jitx>=4.4.0,<5`. Two surfaces have to agree — a 4.4 package against a 4.2 runtime is not a
-  working install — so `jitx build` also needs the runtime (`~/.jitx/current`, check with
+  working install — so `jitx design build` also needs the runtime (`~/.jitx/current`, check with
   `jitx runtime introspect`) on the same line as the library. Before concluding demo code is broken,
   check which `jitx` you actually resolved on both.
 

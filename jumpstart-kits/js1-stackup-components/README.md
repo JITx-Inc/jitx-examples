@@ -21,7 +21,7 @@ JS1 consists of three parts: building a stackup (Part 1) and component creation 
 
 In every part the user uses agents to drive a JITX skill rather than hand-writing the code, and
 nothing counts as done until it clears its ground-truth check — the fab spec, the datasheet, or the
-vendor pin file — **and** `jitx build <non-test design target>` completes successfully.
+vendor pin file — **and** `jitx design build <non-test design target>` completes successfully.
 
 ## Start here — the JS1 walkthrough
 
@@ -71,7 +71,7 @@ a machine-readable file — so you parse it rather than transcribe it. A committ
 generator reconciles the file to exactly 1,369 balls before any component code exists, and the
 circuit wrapper lifts the flat pin map into what a board designer actually consumes: 31 `Power`
 rails, three ground domains, and six GTM transceiver quads as bundles. Verification is layered —
-reconciliation (parsed rows = file footer = full 37×37 grid), 19 tests and 198 subtests including
+reconciliation (parsed rows = file footer = full 37×37 grid), an offline test suite including
 hand-read ball spot-checks, and both designs building `status: ok`. Expect roughly 2–3 hours across
 four `[HUMAN]` gates, most of it agent-autonomous.
 

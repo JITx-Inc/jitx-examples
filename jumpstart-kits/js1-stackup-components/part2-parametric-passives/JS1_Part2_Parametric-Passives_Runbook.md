@@ -1,5 +1,5 @@
 <!--
-JITX Parametric Component Families Runbook (JS1 · Part 2) · rev 1.4 · 2026-09-08
+JITX Parametric Component Families Runbook (JS1 · Part 2) · rev 1.5 · 2026-09-14
 Paste this file into your AI coding agent (Claude Code, Codex / GPT, or Devin), or upload it,
 and tell the agent to follow it. Complete the JS0 Setup Runbook first.
 START A NEW AGENT SESSION before you begin — a skills install only takes effect in a session
@@ -9,7 +9,7 @@ drives a skill.
 
 # JITX Parametric Component Families Runbook (JS1 · Part 2)
 
-**Goal (for the agent):** In a fresh JITX Python project, build four **parameterized, datasheet-driven component families** — three SMD chip-resistor families (**Yageo RC_L**, **Panasonic ERJ**, **Vishay CRCW**) and one MLCC capacitor family (**Samsung Electro-Mechanics CL**). Each family is a single `jitx.Component` class that stands in for the manufacturer's whole catalog family, with **no parts database or online query** — the class *is* the data. Follow the steps **in order**; a family is not done until it passes its tests and `jitx build <non-test design target>`. Where a step is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
+**Goal (for the agent):** In a fresh JITX Python project, build four **parameterized, datasheet-driven component families** — three SMD chip-resistor families (**Yageo RC_L**, **Panasonic ERJ**, **Vishay CRCW**) and one MLCC capacitor family (**Samsung Electro-Mechanics CL**). Each family is a single `jitx.Component` class that stands in for the manufacturer's whole catalog family, with **no parts database or online query** — the class *is* the data. Follow the steps **in order**; a family is not done until it passes its tests and `jitx design build <non-test design target>`. Where a step is marked **[HUMAN]**, stop and wait for me — do not proceed until I confirm.
 
 > **For humans:** prerequisites are a completed **JS0** (authenticated `jitx` CLI, `jitx-skills` enabled in your agent) and network access to the manufacturer datasheet URLs in step 2.
 
@@ -75,7 +75,7 @@ Drive it; don't re-derive it. What is specific to *this* task:
 ```bash
 pyright                 # expect zero errors and zero suppressions
 pytest                  # the family's tests (plus all earlier families' tests)
-jitx build <non-test design target>  # build the intended design, never a target from tests/
+jitx design build <non-test design target>  # build the intended design, never a target from tests/
 ```
 
 A `pyright: ignore` you feel you need is a finding to report, not a way to reach zero. Run the
@@ -104,10 +104,10 @@ $env:PYTHONUTF8 = "1"; py -3 -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install jitx
 jitx project dependencies upgrade
 jitx runtime start --background
-jitx find
+jitx design find
 ```
 
-Build the seeded non-test target from `jitx find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx find`** — the two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `js1-passives` builds as `jitx build js1_passives.main.Js1Passives`. This smoke test must succeed before you write any component code. If it fails, stop and tell me. Then prepare the project for this task: create a `tests/` directory, add `pytest` and `pyright` as dev dependencies, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
+Build the seeded non-test target from `jitx design find` — ignore any target whose module path comes from `test`, `tests`, or a test file. **Take the target verbatim from `jitx design find`** — the two halves are derived differently, so don't assemble it yourself: the package is the directory lowercased with hyphens and spaces turned into underscores, while the design class is that same name in CapWords. A directory called `js1-passives` builds as `jitx design build js1_passives.main.Js1Passives`. This smoke test must succeed before you write any component code. If it fails, stop and tell me. Then prepare the project for this task: create a `tests/` directory, add `pytest` and `pyright` as dev dependencies, and `git init` if you want version control. Leave the seeded `.gitignore` as it is.
 
 **2 · Fetch the datasheets.**
 Download all four manufacturer datasheets into `.context/` (gitignored — **link the URL in each family's docstring, never commit the PDF**):
@@ -120,29 +120,29 @@ Download all four manufacturer datasheets into `.context/` (gitignored — **lin
 Per the skill's **"Verify the download is a datasheet"**: these four URLs are canonical, so if one doesn't answer, say whether you hit an egress problem or a moved document, and tell me which URL you ended up using.
 
 **3 · Family 1 — Yageo RC_L.**
-Drive the component-modeler skill with the Yageo datasheet to build `yageo_rc.py`, following its **Parameterized Component Families** and **Two-Terminal Chip Components** sections. Values encode in Yageo's RKM style (`100K`). Keep this family **self-contained in one file — no shared helpers yet**. Write `tests/test_yageo_rc.py` per the skill's **"Verifying a component with tests"**, cross-checking the datasheet's own ordering example **`RC0402JR-07100KL`**. Table-driven checks go in `self.subTest(...)` — pytest's `parametrize` does not apply to `unittest`-style `TestCase` methods, and `jitx.test.TestCase` is one. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
+Drive the component-modeler skill with the Yageo datasheet to build `yageo_rc.py`, following its **Parameterized Component Families** and **Two-Terminal Chip Components** sections. Values encode in Yageo's RKM style (`100K`). Keep this family **self-contained in one file — no shared helpers yet**. Write `tests/test_yageo_rc.py` per the skill's **"Verifying a component with tests"**, cross-checking the datasheet's own ordering example **`RC0402JR-07100KL`**. Table-driven checks go in `self.subTest(...)` — pytest's `parametrize` does not apply to `unittest`-style `TestCase` methods, and `jitx.test.TestCase` is one. Verify: `pyright` → `pytest` → `jitx design build <non-test design target>`. Commit when green.
 
 **4 · [HUMAN] Verify Family 1 together.**
 Stop and walk me through the family against the datasheet before replicating the pattern. Show me: (a) two or three transcribed dimensions side-by-side with the datasheet table, **including which of the two printed termination bands you used and why**; (b) the encoder reproducing the ordering-example MPN and a decade-carry case (`9999 → "10K"`); (c) a fail-fast rejection listing the valid options — run this demo **inside the instantiation context**, since a plain script raises nothing; (d) how each vendor size label maps to the generator's size key by body L×W — three naming systems meet here: the vendor's own label, the metric code, and the EIA imperial code the generator keys on. Yageo's `0075` is a 0.30 × 0.15 mm body, metric `03015`, imperial (and JITX key) `009005`; its `0100` is 0.40 × 0.20 mm, metric `0402`, imperial `01005`; (e) the skill's filled **Component completeness check** block. **Wait for my approval** before continuing.
 
 **5 · Family 2 — Panasonic ERJ.**
-Build `panasonic_erj.py` from the Panasonic datasheet: 3-digit EIA value code (`103`), its own tables and MPN f-string. This is the second consumer, so per the skill's **"Shared helpers — extract at the second family"**, extract them now into `chip_resistor.py` and refactor Family 1 onto them — Family 1's unchanged tests passing proves the refactor safe. Write `tests/test_panasonic_erj.py`, cross-checking **`ERJ3GEYJ102V`**. Verify: `pyright` → `pytest` (all families) → `jitx build <non-test design target>`. Commit when green.
+Build `panasonic_erj.py` from the Panasonic datasheet: 3-digit EIA value code (`103`), its own tables and MPN f-string. This is the second consumer, so per the skill's **"Shared helpers — extract at the second family"**, extract them now into `chip_resistor.py` and refactor Family 1 onto them — Family 1's unchanged tests passing proves the refactor safe. Write `tests/test_panasonic_erj.py`, cross-checking **`ERJ3GEYJ102V`**. Verify: `pyright` → `pytest` (all families) → `jitx design build <non-test design target>`. Commit when green.
 
 **6 · Family 3 — Vishay CRCW.**
-Build `vishay_crcw.py` on the shared helpers: fixed 4-character RKM value code (`10K0`). This datasheet specifies its cases by standard EIA/IEC size code (`RR1608M` = 1.6 × 0.8 mm for 0603), so prefer the generator's standard chip dimensions — and doc 20035 **p. 11** (`DIMENSIONS AND MASS`) tabulates them too, so the skill's **"Taking the standard table's dimensions is a verification obligation"** applies in full: read p. 11 and assert the table against it per size. Write `tests/test_vishay_crcw.py`, cross-checking **`CRCW0603562RFKEA`**. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
+Build `vishay_crcw.py` on the shared helpers: fixed 4-character RKM value code (`10K0`). This datasheet specifies its cases by standard EIA/IEC size code (`RR1608M` = 1.6 × 0.8 mm for 0603), so prefer the generator's standard chip dimensions — and doc 20035 **p. 11** (`DIMENSIONS AND MASS`) tabulates them too, so the skill's **"Taking the standard table's dimensions is a verification obligation, not a shortcut"** applies in full: read p. 11 and assert the table against it per size. Write `tests/test_vishay_crcw.py`, cross-checking **`CRCW0603562RFKEA`**. Verify: `pyright` → `pytest` → `jitx design build <non-test design target>`. Commit when green.
 
 **7 · Family 4 — Samsung CL (MLCC).**
-Build `samsung_cl.py` — the same pattern with two new axes, **dielectric** (C0G/NP0, X7R, X5R as offered per size/voltage) and **rated voltage**, a 3-digit pF value code, `CapacitorSymbol`, and `reference_designator_prefix = "C"`. Cross-check against the real catalog part **`CL10B104KB8NNNC`**. The linked catalog is the overview edition and hits **both** gaps in the skill's **"When the catalog does not publish what you need, say so"** — no per-size capacitance lineup, and no chip outline table either. Work it per that section, and expect one size to fall out of coverage; tell me which and why. The shared file now serves a non-resistor part, so rename `chip_resistor.py` → `chip_smt.py`, update all imports, and re-run the **full** suite. Write `tests/test_samsung_cl.py`. Verify: `pyright` → `pytest` → `jitx build <non-test design target>`. Commit when green.
+Build `samsung_cl.py` — the same pattern with two new axes, **dielectric** (C0G/NP0, X7R, X5R as offered per size/voltage) and **rated voltage**, a 3-digit pF value code, `CapacitorSymbol`, and `reference_designator_prefix = "C"`. Cross-check against the real catalog part **`CL10B104KB8NNNC`**. The linked catalog is the overview edition and hits **both** gaps in the skill's **"When the catalog does not publish what you need, say so"** — no per-size capacitance lineup, and no chip outline table either. Work it per that section, and expect one size to fall out of coverage; tell me which and why. The shared file now serves a non-resistor part, so rename `chip_resistor.py` → `chip_smt.py`, update all imports, and re-run the **full** suite. Write `tests/test_samsung_cl.py`. Verify: `pyright` → `pytest` → `jitx design build <non-test design target>`. Commit when green.
 
 **8 · Full verification pass.**
-Create a small combined `SampleDesign` that instantiates one part from **each of the four families** and confirm `jitx build <non-test design target>` passes on it. Run `pyright` and the full `pytest` suite, plus the project's lint/format check if the scaffold seeded one. Then run the **`jitx-code-review`** self-critique skill over the four family files and the shared helpers, fix what it finds, re-run the tests, and commit. Report the results of all checks to me.
+Create a small combined `SampleDesign` that instantiates one part from **each of the four families** and confirm `jitx design build <non-test design target>` passes on it. Run `pyright` and the full `pytest` suite, plus the project's lint/format check if the scaffold seeded one. Then run the **`jitx-code-review`** self-critique skill over the four family files and the shared helpers, fix what it finds, re-run the tests, and commit. Report the results of all checks to me.
 
-A good result is: `pyright` reports zero errors and no suppressions, the full `pytest` suite is green including every family's datasheet cross-check, `jitx build <non-test design target>` completes on the combined design, `jitx-code-review` returns no unresolved findings, and each family has its **Component completeness check** block filled in, written next to the code.
+A good result is: `pyright` reports zero errors and no suppressions, the full `pytest` suite is green including every family's datasheet cross-check, `jitx design build <non-test design target>` completes on the combined design, `jitx-code-review` returns no unresolved findings, and each family has its **Component completeness check** block filled in, written next to the code.
 
 **9 · [HUMAN] Close the loop — request a part.**
 The library is done; now show me what it's for. **Invite me to ask for an arbitrary part** — suggest I say: *"give me a 49.9 kΩ 0402 1% Yageo and a 100 nF X7R 0603 50 V Samsung CL."* **Wait for me to ask.** When I do, instantiate the requested parts from the family classes in the combined design, rebuild, and show me the schematic/board — launch `jitx ui open` in the background, it blocks while its window is open (JS0 step 5 explains) — plus the **generated MPNs**, so I can spot-check them against the datasheets' part-numbering schemes.
 
-This step writes code, so it goes through step 8's gate like every other step — finish with the full verification block (`pyright` → `pytest` → `jitx build <non-test design target>` → `jitx-code-review`). Don't let the last code written be the only code that skipped the review. Print the BOM as well as the MPNs: value labels are the one thing none of those four commands checks.
+This step writes code, so it goes through step 8's gate like every other step — finish with the full verification block (`pyright` → `pytest` → `jitx design build <non-test design target>` → `jitx-code-review`). Don't let the last code written be the only code that skipped the review. Print the BOM as well as the MPNs: value labels are the one thing none of those four commands checks.
 
 ---
 
@@ -152,7 +152,7 @@ This step writes code, so it goes through step 8's gate like every other step �
 - Four family classes exist — `yageo_rc.py`, `panasonic_erj.py`, `vishay_crcw.py`, `samsung_cl.py` — each with a passing `jitx.test.TestCase` file covering: build in a `SampleDesign`, metadata + pad count, the datasheet ordering-example MPN cross-check, the human-readable value label, value-encoder units (incl. decade carry), and fail-fast validation.
 - Wherever a family took the generator's standard chip dimensions, a test asserts that table against the datasheet's own, per size, with any disagreement overridden and commented.
 - Shared helpers were extracted **at Family 2** (not before) and renamed component-agnostic **at Family 4**, with the full suite green after each refactor.
-- `pyright` is clean with no suppressions, the full `pytest` suite passes, and the combined four-family design passes `jitx build <non-test design target>`.
+- `pyright` is clean with no suppressions, the full `pytest` suite passes, and the combined four-family design passes `jitx design build <non-test design target>`.
 - Each family carries the skill's filled **Component completeness check** block, written next to the code.
 - A `jitx-code-review` pass has run and its findings are fixed.
 - A live prompted part request (e.g. 49.9 kΩ 0402 1% Yageo + 100 nF X7R 0603 50 V Samsung CL) instantiates, builds, and its generated MPNs check out against the datasheets.

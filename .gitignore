@@ -5,7 +5,7 @@
 
 # Build / cache outputs.
 **/cache/
-# `jitx build` output: <repo-root>/designs/<module.path.design_name>/{design-info,temp,...}
+# `jitx design build` output: <repo-root>/designs/<module.path.design_name>/{design-info,temp,...}
 # The `designs` directory name is chosen by JITX, not by us — hence the Python
 # package is `demos`. Anchored: only the repo-root output tree.
 /designs/

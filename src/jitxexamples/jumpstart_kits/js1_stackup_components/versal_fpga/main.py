@@ -14,7 +14,7 @@ Two deliberately minimal ``SampleDesign``s:
 
 Build (runtime required)::
 
-    jitx build jitxexamples.jumpstart_kits.js1_stackup_components.\\
+    jitx design build jitxexamples.jumpstart_kits.js1_stackup_components.\\
 versal_fpga.main.VersalFPGADesign
 """
 
