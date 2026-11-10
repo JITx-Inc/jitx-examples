@@ -400,13 +400,13 @@ class TPS62933DRLRCircuit(Circuit):
         BstTag().assign(self.BST_MID)
 
         # Design rule constraints
-        # 0.5mm clearance for SW_NODE (switch node needs clearance from other nets)
+        # 0.25mm clearance for SW_NODE (switch node needs clearance from other nets)
         self.sw_clearance_rule = design_constraint(SwTag(), True).clearance(0.25)
 
-        # 0.5mm clearance for BST_MID (bootstrap node needs clearance from other nets)
+        # 0.25mm clearance for BST_MID (bootstrap node needs clearance from other nets)
         self.bst_clearance_rule = design_constraint(BstTag(), True).clearance(0.25)
 
-        # 1.0mm trace width for VIN and VOUT power nets
+        # 0.25mm trace width for VIN and VOUT power nets
         self.power_trace_rule = design_constraint(PowerNetTag()).trace_width(0.25)
 
 

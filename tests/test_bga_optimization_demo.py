@@ -7,7 +7,9 @@ explicitly for that reason. The instantiation test then builds the design and
 asserts on the per-lane structure.
 """
 
+import ast
 import unittest
+from pathlib import Path
 
 from jitx.sample import SampleDesign
 from jitx.test import TestCase
@@ -43,6 +45,20 @@ class TestBGAOptimizationDemoImports(unittest.TestCase):
 
     def test_build_target_is_a_sample_design(self):
         self.assertTrue(issubclass(bga_escape.bga_optimization_design, SampleDesign))
+
+    def test_no_call_passes_the_deprecated_pour_isolate(self):
+        # ``Pour.isolate`` is deprecated since jitx 4.4 (jitx/copper.py); pour
+        # clearance belongs in a design rule. ``isolate=0.0`` translates the
+        # same as leaving it out, so the source is read instead.
+        package = Path(bga_escape.__file__).parent
+        found = [
+            f"{path.name}:{node.lineno}"
+            for path in sorted(package.glob("*.py"))
+            for node in ast.walk(ast.parse(path.read_text()))
+            if isinstance(node, ast.Call)
+            and any(k.arg == "isolate" for k in node.keywords)
+        ]
+        self.assertEqual(found, [])
 
     def test_lane_geometry_constants_are_consistent(self):
         # The BGA's signal balls must fit inside the declared grid; this is the

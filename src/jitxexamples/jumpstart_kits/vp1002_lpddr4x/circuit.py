@@ -1,43 +1,42 @@
 """The JS1 VP1002 with one LPDDR4X x32 interface offered on banks 702 and 701.
 
-The offer is the rule set in :py:mod:`.pinout`, layout
-:py:data:`~.pinout.OPTIMUM_X32_FLIPPED`, built as two levels of ``provide``:
+The offer is :py:data:`~.pinout.LPDDR4X_X32`, built as two levels of
+``provide``:
 
 - Per byte slot, :py:class:`~.bundles.Slot0Bit` to ``Slot3Bit``: each of the
   slot's eight DQ pins, offered with ``all_of``. Taking eight of them in any
-  order is rule 3, the bit swap within a byte.
+  order is the bit swap within a byte.
 - :py:class:`~.bundles.VersalLPDDR4X`, offered with ``one_of``: four options,
-  one per allowed byte-to-slot order (rule 4, the byte swap within a
-  channel). Each option maps the fixed pins, the slot's DQS and DMI, and the
-  eight DQ ports to eight pins required from the slot.
+  one per allowed byte-to-slot order (the byte swap within a channel). Each
+  option maps the fixed pins, the slot's DQS and DMI, and the eight DQ ports
+  to eight pins required from the slot.
 
-Together they offer every byte swap and bit swap the rules allow on this
-layout: :py:func:`~.pinout.assignment_count` assignments. The layout's
-positions are those of channel 0 on AMD's VMK180, VCK190 and VPK120 boards,
-CS1 aside on the single rank VCK190 (see :py:mod:`.pinout`, "Inferred from the boards"); the chosen assignment
-is still validated in Vivado. The jitx-pin-assignment skill covers the
-pattern (hierarchical provider composition).
+Together they offer every byte swap and bit swap AMD's rules allow on this
+layout: :py:func:`~.pinout.assignment_count` assignments. The chosen
+assignment is still validated in Vivado (see :py:mod:`.pinout`). The
+jitx-pin-assignment skill covers the pattern (hierarchical provider
+composition).
 """
 
 from jitx.net import DiffPair, Port, Provide
 
 from ..js1_stackup_components.versal_fpga.circuit import XCVP1002Circuit
 from .bundles import SLOT_BITS, VersalLPDDR4X
-from .pinout import OPTIMUM_X32_FLIPPED, Pos
+from .pinout import LPDDR4X_X32, Pos
 
 
 class VP1002LPDDR4X(XCVP1002Circuit):
     """JS1's VP1002 circuit plus the LPDDR4X offer and its system clock.
 
-    ``sys_clk`` is the DDRMC's differential system clock input (PG313 rule 9),
-    on the fixed sys_clk pins of the layout. Net it to a clock source.
+    ``sys_clk`` is the DDRMC's differential system clock input, on the
+    fixed sys_clk pins of the layout. Net it to a clock source.
     """
 
     sys_clk = DiffPair()
 
     def __init__(self) -> None:
         super().__init__()
-        layout = OPTIMUM_X32_FLIPPED
+        layout = LPDDR4X_X32
         self.SYS_CLK_P = self.sys_clk.p + self._pin(layout.fixed["SYS_CLK_P"])
         self.SYS_CLK_N = self.sys_clk.n + self._pin(layout.fixed["SYS_CLK_N"])
         self.slot_bits = [
@@ -53,7 +52,7 @@ class VP1002LPDDR4X(XCVP1002Circuit):
         return self.fpga.xpio_triplet_pins()[0][pos.index].port
 
     def _options(self, bus: VersalLPDDR4X) -> list[dict[Port, Port]]:
-        layout = OPTIMUM_X32_FLIPPED
+        layout = LPDDR4X_X32
 
         def at(name: str) -> Port:
             return self._pin(layout.fixed[name])

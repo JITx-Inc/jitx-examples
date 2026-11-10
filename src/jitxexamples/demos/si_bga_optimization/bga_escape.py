@@ -358,7 +358,6 @@ class BGALink(Circuit):
                         lane.signal_via_fence_shape,
                         layer=spec.upper_ref_fence_pour_layer,
                         rank=_ANTIPAD_FENCE_POUR_RANK,
-                        isolate=0.0,
                     )
                     spec.upper_ref_fence_tag.assign(p)
                     signal_via_fence_pours.append(p)
@@ -367,7 +366,6 @@ class BGALink(Circuit):
                     lane.deskew_fence_pour_shape,
                     layer=spec.deskew_antipad_fence_pour_layer,
                     rank=_DESKEW_ANTIPAD_FENCE_POUR_RANK,
-                    isolate=0.0,
                 )
                 spec.deskew_antipad_fence_tag.assign(dp)
                 deskew_fence_pours.append(dp)
@@ -389,13 +387,21 @@ class BGALink(Circuit):
         n_conductors = len(substrate.stackup.conductors)
         gnd_pour_shape = rectangle(48, 48, radius=4)
         self.gnd_pours = [
-            Pour(gnd_pour_shape, layer=layer, rank=1, isolate=0.0)
-            for layer in range(n_conductors)
+            Pour(gnd_pour_shape, layer=layer, rank=1) for layer in range(n_conductors)
         ]
 
         # GND-via stitching around every BGA GND ball. The site-planning
         # helper returns pure data; this Circuit constructs the actual
         # Via instances and owns them as a named structural member.
+        # These stay code-placed rather than a ``stitch_via`` rule: each is
+        # via-in-pad at a GND ball centre, and its via class reaches the
+        # reference plane below that row pair's signal layer. The
+        # code-placed vias also count as same-net objects for the GND pours
+        # on the layers they span: a pour with no pad or via of its own net
+        # inside it comes back empty (measured on jitx 4.6). A stitch
+        # rule's own vias do not hold such a pour: the runtime still places
+        # them on the removed pour's footprint, with no issue (measured on
+        # jitx 4.6).
         self.gnd_stitching_vias = [
             substrate.gnd_via[signal_layer]().at(*bga.ball_center(row, col))
             for row, col, signal_layer in gnd_pad_via_sites()

@@ -1,10 +1,10 @@
 """Port bundles for the Versal side of an LPDDR4X x32 interface.
 
 The memory side is :py:class:`~jitxexamples.protocols.memory.lpddr4.LPDDR4`.
-The Versal DDRMC drives one CKE per channel, where a dual-rank memory has one
-per rank (see "Inferred from the boards" in :py:mod:`.pinout`), so the
-controller side is
-:py:class:`~jitxexamples.protocols.memory.lpddr4.LPDDR4SharedCKE` and the
+The controller side drives one CKE per channel, as AMD's VMK180, VCK190 and
+VPK120 boards map it, where a dual-rank memory has one per rank (UG863 lists
+CKE0 and CKE1 per channel; see :py:mod:`.pinout`). So it is
+:py:class:`~jitxexamples.protocols.memory.lpddr4.LPDDR4SharedCKE`, and a
 design nets its one CKE to both memory CKE balls.
 """
 
@@ -22,7 +22,7 @@ class VersalLPDDR4X(LPDDR4SharedCKE):
 
 
 class Slot0Bit(Port):
-    """One DQ pin of byte slot 0. See :py:class:`.fpga.VP1002LPDDR4X`."""
+    """One DQ pin of byte slot 0. See :py:class:`.circuit.VP1002LPDDR4X`."""
 
     p = Port()
 
@@ -51,4 +51,4 @@ SLOT_BITS: tuple[type[Slot0Bit | Slot1Bit | Slot2Bit | Slot3Bit], ...] = (
     Slot2Bit,
     Slot3Bit,
 )
-"The DQ pin type of each byte slot, in :py:data:`.pinout.OPTIMUM_X32_FLIPPED` order."
+"The DQ pin type of each byte slot, in :py:data:`.pinout.LPDDR4X_X32` order."

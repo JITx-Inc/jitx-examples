@@ -177,7 +177,7 @@ Devin session (or ask it to reload/list skills) and verify with:
 ```text
 List the available skills related to JITX. Confirm whether you can see @jitx,
 @jitx-component-modeler, @jitx-circuit-builder, @jitx-substrate-modeler,
-@jitx-physical-layout, @jitx-interconnect-constraints, @jitx-pin-assignment,
+@jitx-code-layout, @jitx-interconnect-constraints, @jitx-pin-assignment,
 @jitx-code-review, and @jitx-mechanical.
 ```
 

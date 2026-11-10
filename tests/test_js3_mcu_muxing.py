@@ -8,6 +8,7 @@ import itertools
 from jitx.inspect import extract
 from jitx.net import Port, Provide
 from jitx.test import TestCase
+from jitxlib.parts.lock import LockMode, force_mode
 
 from jitxexamples.components.mcus.raspberry_pi_RP2040 import RP2040
 from jitxexamples.jumpstart_kits.js3_pin_assignment.mcu_muxing.main import (
@@ -19,6 +20,17 @@ from jitxexamples.jumpstart_kits.js3_pin_assignment.mcu_muxing.verify import (
     I2C0_SWAPPED,
     SPI1_GPIO,
 )
+
+
+def setUpModule() -> None:
+    # Resolve parts with the lockfile off, as PartsTestDesign does, so a
+    # test run never writes parts.lock.json at the repository root.
+    force_mode(LockMode.OFF)
+
+
+def tearDownModule() -> None:
+    force_mode(None)
+
 
 # RP2040 Datasheet (build-date 2025-02-20), Table 279: GPIO numbers per function,
 # F1 (SPI) and F3 (I2C) columns, transcribed by hand.

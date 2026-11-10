@@ -7,6 +7,7 @@ from jitx.inspect import extract
 from jitx.landpattern import Pad
 from jitx.net import DiffPair, Port, Provide
 from jitx.test import TestCase
+from jitxlib.parts.lock import LockMode, force_mode
 
 from jitxexamples.jumpstart_kits.js3_pin_assignment.usb_esd.esd import ProtectedPair
 from jitxexamples.jumpstart_kits.js3_pin_assignment.usb_esd.main import (
@@ -19,6 +20,17 @@ from jitxexamples.jumpstart_kits.js3_pin_assignment.usb_esd.verify import (
     UsbEsdProofSwapped,
     UsbEsdProofCircuit,
 )
+
+
+def setUpModule() -> None:
+    # Resolve parts with the lockfile off, as PartsTestDesign does, so a
+    # test run never writes parts.lock.json at the repository root.
+    force_mode(LockMode.OFF)
+
+
+def tearDownModule() -> None:
+    force_mode(None)
+
 
 # PUSB3FR4 datasheet, 12 July 2018: pairs CH1/CH2 and CH3/CH4 (Table 1 symbol,
 # Figs. 3, 4 and 15), either channel of a pair on D+ (Table 5).

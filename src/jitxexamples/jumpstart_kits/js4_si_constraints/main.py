@@ -1,15 +1,16 @@
-"""JS4 shipping design: the VP1002 driving a Micron MT53E1G32D2FW LPDDR4X.
+"""JS4 shipping design: SI constraints on the VP1002 to Micron LPDDR4X link.
 
-The FPGA offers every byte swap and bit swap AMD's rules allow on one
-layout, the single channel x32 pinout, flipped, on banks 702 and 701
-(:py:mod:`.fpga`), with each position where AMD's VMK180, VCK190 and VPK120
-boards put it, CS1 aside on the single rank VCK190 (:py:mod:`.pinout`). The design requires one interface, nets it
-to the memory with plain nets, and applies the UG863 timing constraints
-(:py:mod:`.constraint`). JITX picks the assignment when the board is routed.
-The design has no routes, so its issue report shows each constrained path
-unassigned, or for CKE without a path; :py:mod:`.proof` routes part of it in
-code to show the constraints bind. Vivado validation of the chosen
-assignment is the designer's step: the kit exports no XDC.
+The VP1002 offers its LPDDR4X pins with every swap AMD's rules allow
+(:py:mod:`jitxexamples.jumpstart_kits.vp1002_lpddr4x`); the design requires
+one interface, nets it to a Micron MT53E1G32D2FW with plain nets, and applies
+UG863's skew limits and trace length budget
+(:py:mod:`.constraint`). Each FPGA pin of memory triplet M0, which holds
+every pin the offer uses, carries its package delay as a :py:class:`~jitx.si.TerminatingPinModel`, read from the synthetic
+estimates the part package supplies (:py:mod:`.models`); a real design reads
+its Vivado export instead. JITX picks the pin assignment when the board is
+routed, so before routing each constrained path reports its pin unassigned,
+or for CKE no path; :py:mod:`.proof` routes part of it in code so the
+constraints measure.
 
 Board and substrate are JS1's 20-layer HDI stackup on its 80 x 80 mm board.
 
@@ -18,7 +19,7 @@ with the project's runtime running::
 
     import jitx
 
-    from jitxexamples.jumpstart_kits.js4_fpga_lpddr4x.main import JS4Design
+    from jitxexamples.jumpstart_kits.js4_si_constraints.main import JS4Design
 
 
     def main() -> None:
@@ -39,6 +40,10 @@ with the project's runtime running::
 ``main()`` sits behind the ``__name__`` guard because JITX design discovery
 imports every ``.py`` file under the project root.
 
+On jitx 4.6.0 the report labels each path's FPGA end under ``RESET_n``, as
+in ``RESET_n.ch[0].ca[0]`` for CA0 of channel A; the path is still that
+signal's.
+
 Not modeled yet: the system
 clock source, memory power rails and decoupling, CKE termination, the
 RESET_n pull-down, ZQ and ODT resistors, and the IO_VR_700 resistor.
@@ -51,13 +56,18 @@ from jitx.si import ReferencePlanes
 from jitxexamples.components.memories.MT53E1G32D2FW_046_WT_B import (
     MT53E1G32D2FW_046_WT_B,
 )
+from jitxexamples.protocols.memory.lpddr4 import LPDDR4ConstraintParams
 
-from jitxexamples.protocols.memory.lpddr4 import LPDDR4Constraint
-
-from ..js1_stackup_components.hdi_stackup.board import HDIBoard, HDISubstrate
-from .bundles import VersalLPDDR4X
-from .constraint import UG863_PARAMS
-from .fpga import VP1002LPDDR4X
+from ..js1_stackup_components.hdi_stackup.board import (
+    STRIPLINE_LAYERS,
+    HDIBoard,
+    HDISubstrate,
+)
+from ..vp1002_lpddr4x.bundles import VersalLPDDR4X
+from ..vp1002_lpddr4x.circuit import VP1002LPDDR4X
+from ..vp1002_lpddr4x.package_delays import SYNTHETIC_CSV
+from .constraint import UG863_PARAMS, VersalLPDDR4XConstraint, length_budget
+from .models import package_pin_models
 
 
 class JS4Circuit(Circuit):
@@ -67,10 +77,14 @@ class JS4Circuit(Circuit):
     balls face the FPGA.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, params: LPDDR4ConstraintParams = UG863_PARAMS) -> None:
         self.fpga = VP1002LPDDR4X()
         self.fpga.fpga.at(0, 12)
         self.memory = MT53E1G32D2FW_046_WT_B().at(10, -14.5, rotate=180)
+        # Package delay on each FPGA pin of triplet M0, from the synthetic
+        # estimates the part package supplies; a real design reads its Vivado
+        # export instead.
+        self.package_delays = package_pin_models(self.fpga.fpga, SYNTHETIC_CSV)
         bus = self.fpga.require(VersalLPDDR4X)
         mem = self.memory.lpddr4
 
@@ -98,10 +112,11 @@ class JS4Circuit(Circuit):
         # routing structure references.
         self.gnd_net = self.fpga.pwr_vcco_700.Vn + self.memory.VSS
         with ReferencePlanes(self.gnd_net):
-            self.lpddr4x_si = LPDDR4Constraint(
+            self.lpddr4x_si = VersalLPDDR4XConstraint(
                 diff_structure=HDISubstrate.DRS_100,
                 se_structure=HDISubstrate.SE_50,
-                params=UG863_PARAMS,
+                params=params,
+                max_delay=length_budget(HDISubstrate.SE_50, STRIPLINE_LAYERS),
             )
             self.lpddr4x_si.constrain(bus, mem)
 

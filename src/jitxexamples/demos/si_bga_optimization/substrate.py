@@ -97,7 +97,6 @@ def _rs_uncoupled_layer(signal_layer: int) -> "RoutingStructure.Layer":
             clearance=0.135,
             velocity=VEL_STRIPLINE,
             insertion_loss=0.018,
-            neck_down=RoutingStructure.NeckDown(trace_width=0.10, clearance=0.135),
         )
         .reference(signal_layer - 1, 1.0)
         .reference(signal_layer + 1, 1.0)
