@@ -135,10 +135,10 @@ class LPDDR4Example(Circuit):
         self.si.constrain(self.controller.lpddr4, self.memory.lpddr4)
 
         mem = self.memory
-        self.gnd = Net([*self.controller.gnd, mem.VSS], name="GND")
-        self.vdd1 = Net([mem.VDD1], name="VDD1")
-        self.vdd2 = Net([mem.VDD2], name="VDD2")
-        self.vddq = Net([mem.VDDQ], name="VDDQ")
+        self.gnd = Net([*self.controller.gnd, *mem.VSS], name="GND")
+        self.vdd1 = Net(mem.VDD1, name="VDD1")
+        self.vdd2 = Net(mem.VDD2, name="VDD2")
+        self.vddq = Net(mem.VDDQ, name="VDDQ")
 
 
 class LPDDR4ExampleDesign(SampleDesign):

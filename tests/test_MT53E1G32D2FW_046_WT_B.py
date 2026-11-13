@@ -117,14 +117,13 @@ class TestMT53E1G32D2FW_046_WT_B(TestCase):
             "RESET_n",
             "ZQ0",
             "ZQ1",
-            "VDD1",
-            "VDD2",
-            "VDDQ",
-            "VSS",
             "NC",
             "DNU",
         ):
             name(getattr(comp, attr), attr)
+        for attr in ("VDD1", "VDD2", "VDDQ", "VSS"):
+            for port in getattr(comp, attr):
+                name(port, attr)
         return names
 
     def test_every_ball_matches_figure_6(self) -> None:

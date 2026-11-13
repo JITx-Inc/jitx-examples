@@ -1,0 +1,36 @@
+FABRICATION NOTES: jitxexamples.jumpstart_kits.js5_diplexer.main.Diplexer
+(JLCPCB, 2-layer RO4350B 0.76 mm)
+
+These notes travel with the fabrication packet of this board, exported with
+jitxlib-jlcpcb from the design as committed beside it: re-export the packet
+after any change to the board. The JLCPCB export cannot carry the notes: the
+gerber set has no notes or drawing layer, and the order sheet (the packet's
+-order.md file) has no via-covering or note field. Keep this file beside the
+order sheet, and enter note 1's first sentence in the order form's remark
+field. The order sheet's "Stackup: Proxied" line is an exporter fault: the
+stackup is jitxlib.jlcpcb's JLC02076_RO4350B.
+
+1. IN-PAD VIAS: the ground vias in the edge-launch jacks' ground pads
+   (J1, J2, J3; 0.30 mm drill, 0.45 mm pad, 10 per jack) are plated and
+   OPEN: not filled, not capped, not tented. JLCPCB does not fill or cap
+   vias on its Rogers boards. Solder may wick into them when the jacks are
+   soldered; that is accepted. Order form: pick no filled, capped or plugged
+   Via Covering. The mask gerber opens the 30 in-pad vias on both sides and
+   covers every other via. Which remaining Via Covering option follows the
+   mask gerber on JLCPCB's Rogers form is not confirmed here: ask JLCPCB
+   before ordering.
+
+2. TOP SOLDERMASK is opened over the RF signal lines, their coplanar gaps
+   and the connector launches as drawn in the mask gerber. Do not add mask
+   there.
+
+3. BOARD EDGE: the jacks' centre and ground pads run to the board edge as
+   the Würth 60312202114514 data sheet draws them. Every other copper keeps
+   JLCPCB's 0.20 mm copper-to-edge minimum.
+
+4. JACK BOTTOM TABS: the jack is made for a 1.6 mm board, so on this
+   0.76 mm board its bottom ground tabs stand about 0.9 mm off the bottom
+   ground pads and are left unsoldered, as the design accepts. The launch's
+   ground is the top ground pads and the open in-pad vias down to the
+   bottom pads. The bottom paste layer still draws those pads; the packet
+   orders top-side assembly only, so no bottom stencil is needed.

@@ -20,6 +20,7 @@ from jitx.inspect import extract, visit
 from jitx.landpattern import Pad, PadMapping, PadShape
 from jitx.net import Port
 from jitx.sample import SampleDesign
+from jitx.substrate import SubstrateContext
 from jitx.symbol import Pin
 from jitx.test import TestCase
 from jitxlib.symbols.box import BoxSymbol
@@ -279,16 +280,19 @@ class TestKSZ9031RNX(TestCase):
         self.assertEqual(PSADesign().circuit.phy.mpn, "KSZ9031RNXIC")
 
     def test_every_ordering_example(self) -> None:
-        for temperature in PIS_TEMPERATURES:
-            for bond_wire in PIS_BOND_WIRES:
-                expected = PIS_TRAY_EXAMPLES.get((temperature, bond_wire))
-                with self.subTest(temperature=temperature, package=bond_wire):
-                    if expected is None:
-                        with self.assertRaises(ValueError):
-                            KSZ9031RNX(temperature=temperature, package=bond_wire)
-                    else:
-                        phy = KSZ9031RNX(temperature=temperature, package=bond_wire)
-                        self.assertEqual(phy.mpn, expected)
+        # The land pattern reads the substrate; without this context the test
+        # passed only when an earlier test in the file had left one active.
+        with SubstrateContext(DefaultDesign().substrate):
+            for temperature in PIS_TEMPERATURES:
+                for bond_wire in PIS_BOND_WIRES:
+                    expected = PIS_TRAY_EXAMPLES.get((temperature, bond_wire))
+                    with self.subTest(temperature=temperature, package=bond_wire):
+                        if expected is None:
+                            with self.assertRaises(ValueError):
+                                KSZ9031RNX(temperature=temperature, package=bond_wire)
+                        else:
+                            phy = KSZ9031RNX(temperature=temperature, package=bond_wire)
+                            self.assertEqual(phy.mpn, expected)
 
     def test_land_pattern_guard_fails_loud(self) -> None:
         # RecommendedQFN overrides two private methods QFN inherits; if either
